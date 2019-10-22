@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="side_line_circle_size">12dp</dimen>
+    <dimen name="side_line_line_width">3dp</dimen>
+    <dimen name="side_line_vertical_margin">40dp</dimen>
+    <dimen name="side_line_horizontal_margin">15dp</dimen>
+</resources>

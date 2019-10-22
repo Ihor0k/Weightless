@@ -21,8 +21,6 @@ public class GameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_game);
 
         GameContract.View boardView = findViewById(R.id.board);
-        BottomPanelView bottomPanelView = findViewById(R.id.bottomPanel);
-        bottomPanelView.setBoardView((BoardView) boardView);
         TextView scoreView = findViewById(R.id.score);
         SharedPreferences preferences = getPreferences(MODE_PRIVATE);
         this.presenter = new GamePresenter(this, boardView, scoreView, preferences);

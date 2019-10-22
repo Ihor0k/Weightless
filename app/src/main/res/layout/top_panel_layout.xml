@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <Button
+        android:layout_width="40dp"
+        android:layout_height="45dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:background="@drawable/pause"
+        android:onClick="onRestart" />
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true">
+
+        <TextView
+            android:id="@+id/highScore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/ic_high_score"
+            android:gravity="center"
+            android:paddingLeft="8dp"
+            android:paddingTop="16dp"
+            android:paddingRight="8dp"
+            android:text="9000"
+            android:textColor="@android:color/white"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/score"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/highScore"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/score_background"
+            android:text="12"
+            android:textColor="@android:color/white"
+            android:textSize="20sp" />
+    </RelativeLayout>
+</RelativeLayout>
