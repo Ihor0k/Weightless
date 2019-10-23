@@ -12,47 +12,36 @@ public class Game {
     public final static int ROWS_COUNT = 6;
     public final static int COLUMNS_COUNT = 4;
 
-    private final Tile[][] field;
+    private final static int INIT_CELLS_COUNT = 9;
+
+    private Tile[][] field;
     private final GameEventBuilder eventBuilder;
     private final ColorGenerator colorGenerator;
+    private final Random random;
 
     private int score;
-    private int counter = 1;
 
     public Game(GameEventBuilder eventBuilder, ColorGenerator colorGenerator) {
-        this.eventBuilder = eventBuilder;
-        this.colorGenerator = colorGenerator;
-        this.field = generateField();
-        this.score = 0;
+        this(eventBuilder, colorGenerator, null, 0);
     }
 
     public Game(GameEventBuilder eventBuilder, ColorGenerator colorGenerator, Tile[][] field, int score) {
         this.eventBuilder = eventBuilder;
         this.colorGenerator = colorGenerator;
-        this.field = field;
+        this.random = new Random();
+        if (field != null) {
+            this.field = field;
+        } else {
+            initField();
+        }
         this.score = score;
     }
 
-    private Tile[][] generateField() {
-        // TODO
-        int[][] fieldInt = {
-                {0, 0, 0, 0},
-                {0, 0, 0, 0},
-                {1, 0, 0, 1},
-                {1, 0, 0, 1},
-                {1, 1, 0, 1},
-                {1, 1, 1, 1}
-        };
-        Tile[][] field = new Tile[ROWS_COUNT][COLUMNS_COUNT];
-        for (int i = 0; i < ROWS_COUNT; i++) {
-            for (int j = 0; j < COLUMNS_COUNT; j++) {
-                int value = fieldInt[i][j];
-                if (value != 0) {
-                    field[i][j] = new Tile(i, j, colorGenerator.nextColor());
-                }
-            }
+    private void initField() {
+        this.field = new Tile[ROWS_COUNT][COLUMNS_COUNT];
+        for (int i = 0; i < INIT_CELLS_COUNT; i++) {
+            generateRandomTile();
         }
-        return field;
     }
 
     public GameEvent move(Cell from, int toColumn) {
@@ -76,10 +65,8 @@ public class Game {
             event.withEvents(subEvent1, subEvent2);
         }
         GameEvent event2 = generateRandomTile();
-//        GameEvent event3 = generateRandomTile();
         event.beforeEvent(event2);
-//        event2.beforeEvent(event3);
-//        dumpField();
+        dumpField();
         return event;
     }
 
@@ -94,7 +81,7 @@ public class Game {
         if (tile1Value == tile2Value) {
             GameEvent event1 = removeTileAfterPushing(tile1X, tile1Y);
             GameEvent event2 = removeTileAfterPushing(tile2X, tile2Y);
-            GameEvent event3 = incrementScore(1);
+            GameEvent event3 = incrementScore();
             return eventBuilder.onMultiEvents(event1, event2, event3);
         } else {
             return eventBuilder.nullEvent();
@@ -108,9 +95,9 @@ public class Game {
         return event;
     }
 
-    private GameEvent incrementScore(int score) {
-        this.score += score;
-        return eventBuilder.onScoreEvent(score);
+    private GameEvent incrementScore() {
+        this.score += 1;
+        return eventBuilder.onScoreEvent(1);
     }
 
     private GameEvent moveDown(int x, int y) {
@@ -135,12 +122,6 @@ public class Game {
             return moveDown(x, topY);
         }
         return eventBuilder.nullEvent();
-    }
-
-    private GameEvent setTileValue(int x, int y, int value) {
-        getTile(x, y).setColor(value);
-//        return eventBuilder.onUpdate(new Cell(x, y), value);
-        return eventBuilder.nullEvent();    // TODO
     }
 
     private GameEvent removeTile(int x, int y) {
@@ -176,14 +157,11 @@ public class Game {
     }
 
     private GameEvent generateRandomTile() {
-        Random random = new Random();
-//        int value = random.nextInt(9) + 1 + (counter - counter % 10);
         int value = colorGenerator.nextColor();
         List<Cell> emptyCells = availableEmptyCells();
         int column = random.nextInt(emptyCells.size());
         Cell cell = emptyCells.get(column);
         Tile tile = new Tile(cell.x, cell.y, value);
-        counter++;
         return setTile(tile, cell.x, cell.y);
     }
 
@@ -233,32 +211,8 @@ public class Game {
         }
         return n;
     }
-//
-//    public int leftAvailableColumn(int x, int y, int leftmost) {
-//        int column = x;
-//        for (int i = x - 1; i >= leftmost; i--) {
-//            if (isEmptyCell(i, y)) {
-//                column = i;
-//            } else {
-//                break;
-//            }
-//        }
-//        return column;
-//    }
-//
-//    public int rightAvailableColumn(int x, int y, int rightmost) {
-//        int column = x;
-//        for (int i = x + 1; i <= rightmost; i++) {
-//            if (isEmptyCell(i, y)) {
-//                column = i;
-//            } else {
-//                break;
-//            }
-//        }
-//        return column;
-//    }
 
-    public int bottomAvailableRow(int x, int y) {
+    private int bottomAvailableRow(int x, int y) {
         for (int i = ROWS_COUNT - 1; i > y; i--) {
             if (isEmptyCell(x, i)) {
                 return i;

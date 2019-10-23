@@ -78,7 +78,7 @@ public class GamePresenter implements GameContract.Presenter {
 
     @Override
     public void moveTile(Cell from, Cell to) {
-        GameEvent event = this.game.move(from, to.x);
+        GameEvent event = game.move(from, to.x);
         Animator animator = event.getAnimator();
         animator.setDuration(100);
         animator.addListener(new AnimatorListenerAdapter() {
@@ -98,8 +98,8 @@ public class GamePresenter implements GameContract.Presenter {
     @Override
     public void serialize() {
         SharedPreferences.Editor editor = this.preferences.edit();
-        Tile[][] field = this.game.getField();
-        int score = this.game.getScore();
+        Tile[][] field = game.getField();
+        int score = game.getScore();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(field);
@@ -119,8 +119,8 @@ public class GamePresenter implements GameContract.Presenter {
     }
 
     private void initView() {
-        this.view.init(this.game.getField());
-        scoreView.setText(String.valueOf(this.game.getScore()));
+        this.view.init(game.getField());
+        scoreView.setText(String.valueOf(game.getScore()));
     }
 
     private Game deserializeGame(SharedPreferences preferences) {
@@ -131,13 +131,13 @@ public class GamePresenter implements GameContract.Presenter {
             try (ObjectInputStream ois = new ObjectInputStream(bais)) {
                 Tile[][] field = (Tile[][]) ois.readObject();
                 int score = preferences.getInt("score", 0);
-                return new Game(this.eventBuilder, this.colorGenerator, field, score);
+                return new Game(eventBuilder, colorGenerator, field, score);
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
-                return new Game(this.eventBuilder, this.colorGenerator);
+                return new Game(eventBuilder, colorGenerator);
             }
         } else {
-            return new Game(this.eventBuilder, this.colorGenerator);
+            return new Game(eventBuilder, colorGenerator);
         }
     }
 }
