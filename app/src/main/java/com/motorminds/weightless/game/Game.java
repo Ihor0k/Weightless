@@ -11,9 +11,8 @@ import java.util.List;
 import java.util.Random;
 
 public class Game {
-    public final static int ROWS_COUNT = 6;
-    public final static int COLUMNS_COUNT = 4;
-
+    private final static int ROWS_COUNT = 6;
+    private final static int COLUMNS_COUNT = 4;
     private final static int INIT_CELLS_COUNT = 9;
 
     private Tile[][] field;
@@ -70,6 +69,11 @@ public class Game {
         event.beforeEvent(event2);
         dumpField();
         return event;
+    }
+
+    public GameEvent create(Cell cell, int color) {
+        Tile tile = new Tile(cell.x, cell.y, color);
+        return setTile(tile, cell.x, cell.y);
     }
 
     private GameEvent pushTiles(int tile1X, int tile1Y, int tile2X, int tile2Y) {

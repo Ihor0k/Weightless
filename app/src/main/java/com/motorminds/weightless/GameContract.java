@@ -1,9 +1,6 @@
 package com.motorminds.weightless;
 
 import android.animation.Animator;
-import android.content.SharedPreferences;
-
-import java.io.IOException;
 
 public interface GameContract {
     interface View {
@@ -27,6 +24,8 @@ public interface GameContract {
         Cell wantToMove(Cell cell, int toColumn);
 
         void moveTile(Cell from, Cell to);
+
+        void createTile(Cell cell, int color);
 
         void serialize();
 

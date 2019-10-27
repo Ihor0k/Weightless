@@ -9,7 +9,7 @@ import android.graphics.drawable.Drawable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-public class SideLine extends Drawable {
+public class SideLineView extends Drawable {
     private final Paint paint;
     private final int circleSize;
     private final float circleRadius;
@@ -19,7 +19,7 @@ public class SideLine extends Drawable {
     private float circle2Y;
 
 
-    public SideLine(int color, int circleSize, int lineWidth) {
+    public SideLineView(int color, int circleSize, int lineWidth) {
         this.paint = new Paint();
         this.circleSize = circleSize;
         this.circleRadius = circleSize / 2F;

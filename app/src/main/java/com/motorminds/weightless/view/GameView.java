@@ -44,8 +44,8 @@ public class GameView extends ViewGroup {
         int circleSize = resources.getDimensionPixelSize(R.dimen.side_line_circle_size);
         int lineWidth = resources.getDimensionPixelSize(R.dimen.side_line_line_width);
 
-        this.leftLine = new SideLine(sideLineColor, circleSize, lineWidth);
-        this.rightLine = new SideLine(sideLineColor, circleSize, lineWidth);
+        this.leftLine = new SideLineView(sideLineColor, circleSize, lineWidth);
+        this.rightLine = new SideLineView(sideLineColor, circleSize, lineWidth);
     }
 
     @Override

@@ -6,12 +6,14 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.util.AttributeSet;
+import android.view.DragEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.motorminds.weightless.Cell;
+import com.motorminds.weightless.ColorAndView;
 import com.motorminds.weightless.GameContract;
 import com.motorminds.weightless.R;
 import com.motorminds.weightless.Tile;
@@ -23,8 +25,8 @@ public class BoardView extends ViewGroup implements GameContract.View {
     private GameContract.Presenter presenter;
 
     private Map<Cell, View> tileViews;
+    private Map<View, Cell> dropZones;
 
-    private OnTouchListenerBuilder listenerBuilder;
     private int rowsCount;
     private int columnsCount;
     private int cellSize;
@@ -34,7 +36,7 @@ public class BoardView extends ViewGroup implements GameContract.View {
         super(context, attrs);
 
         this.tileViews = new HashMap<>();
-        this.listenerBuilder = new OnTouchListenerBuilder();
+        this.dropZones = new HashMap<>();
         this.enabled = false;
     }
 
@@ -44,6 +46,9 @@ public class BoardView extends ViewGroup implements GameContract.View {
         int height = MeasureSpec.getSize(heightMeasureSpec);
         this.cellSize = Math.min(width / columnsCount, height / rowsCount);
         int childMeasureSpec = MeasureSpec.makeMeasureSpec(cellSize, MeasureSpec.EXACTLY);
+        for (View view : dropZones.keySet()) {
+            view.measure(childMeasureSpec, childMeasureSpec);
+        }
         for (View view : tileViews.values()) {
             view.measure(childMeasureSpec, childMeasureSpec);
         }
@@ -56,6 +61,11 @@ public class BoardView extends ViewGroup implements GameContract.View {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        for (Map.Entry<View, Cell> viewCellEntry : dropZones.entrySet()) {
+            Cell cell = viewCellEntry.getValue();
+            View view = viewCellEntry.getKey();
+            onCellLayout(cell, view);
+        }
         for (Map.Entry<Cell, View> cellViewEntry : tileViews.entrySet()) {
             Cell cell = cellViewEntry.getKey();
             View view = cellViewEntry.getValue();
@@ -79,19 +89,17 @@ public class BoardView extends ViewGroup implements GameContract.View {
 
     @Override
     public void init(Tile[][] field) {
-        for (View view : this.tileViews.values()) {
-            removeView(view);
-        }
         this.tileViews.clear();
         this.rowsCount = field.length;
-        this.columnsCount = field[0].length;
+        this.columnsCount = rowsCount > 0 ? field[0].length : 0;
 
         for (int i = 0; i < field.length; i++) {
             for (int j = 0; j < field[i].length; j++) {
+                Cell cell = new Cell(j, i);
+                createDropZone(cell);
                 Tile tile = field[i][j];
                 if (tile == null) continue;
-                Cell cell = new Cell(j, i);
-                View tileView = createTileView(cell, tile.getColor());
+                View tileView = createTileView(tile.getColor());
                 addTileView(cell, tileView);
             }
         }
@@ -99,23 +107,41 @@ public class BoardView extends ViewGroup implements GameContract.View {
         this.enabled = true;
     }
 
-    private View createTileView(Cell cell, int color) {
-        OnTouchListener onTouchListener = listenerBuilder.buildListener(cell);
+    private void createDropZone(Cell cell) {
+        View view = new View(getContext());
+        dropZones.put(view, cell);
+        view.setOnDragListener((v, event) -> {
+            switch (event.getAction()) {
+                case DragEvent.ACTION_DROP: {
+                    ColorAndView colorAndView = (ColorAndView) event.getLocalState();
+                    View tileView = colorAndView.view;
+                    ViewGroup viewParent = (ViewGroup) tileView.getParent();
+                    viewParent.removeView(tileView);
+                    presenter.createTile(cell, colorAndView.color);
+                }
+            }
+            return true;
+        });
+        addView(view);
+    }
+
+    private View createTileView(int color) {
         LayoutInflater inflater = LayoutInflater.from(getContext());
         View tileLayout = inflater.inflate(R.layout.cell_layout, this, false);
-        getTileBackground(tileLayout).setColor(color);
-        tileLayout.setOnTouchListener(onTouchListener);
+        setCellBackground(tileLayout, color);
         return tileLayout;
     }
 
     private void addTileView(Cell cell, View tileView) {
+        OnTouchListener onTouchListener = buildListener(cell);
+        tileView.setOnTouchListener(onTouchListener);
         tileViews.put(cell, tileView);
         addView(tileView);
     }
 
     @Override
     public Animator createTile(Cell cell, int color) {
-        View tileView = createTileView(cell, color);
+        View tileView = createTileView(color);
         tileView.setAlpha(0);
         addTileView(cell, tileView);
         return ObjectAnimator.ofFloat(tileView, "alpha", 1);
@@ -125,7 +151,8 @@ public class BoardView extends ViewGroup implements GameContract.View {
     public Animator moveTile(Cell from, Cell to) {
         View tileView = tileViews.remove(from);
         tileViews.put(to, tileView);
-        tileView.setOnTouchListener(listenerBuilder.buildListener(to));
+        OnTouchListener onTouchListener = buildListener(to);
+        tileView.setOnTouchListener(onTouchListener);
         ObjectAnimator animator = new ObjectAnimator();
         animator.setTarget(tileView);
         if (from.x != to.x) {
@@ -170,46 +197,42 @@ public class BoardView extends ViewGroup implements GameContract.View {
         this.enabled = false;
     }
 
-    private GradientDrawable getTileBackground(View tileLayout) {
-        return (GradientDrawable) tileLayout.findViewById(R.id.cell_view).getBackground();
+    private void setCellBackground(View cellLayout, int color) {
+        View cellView = cellLayout.findViewById(R.id.cell_view);
+        GradientDrawable background = (GradientDrawable) cellView.getBackground();
+        background.setColor(color);
     }
 
-    private void setBackgroundAlpha(View tileLayout, int alpha) {
-        getTileBackground(tileLayout).setAlpha(alpha);
-    }
-
-    class OnTouchListenerBuilder {
-        OnTouchListener buildListener(Cell cell) {
-            return (v, event) -> {
-                if (!enabled) return true;
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN: {
-                        setBackgroundAlpha(v, 127);
-                        return true;
-                    }
-                    case MotionEvent.ACTION_MOVE: {
-                        float dx = event.getX();
-                        int x = (int) (cell.x + dx / cellSize);
-//                        MoveToCell moveTo = presenter.wantToMove(cell, x);
-                        return true;
-                    }
-                    case MotionEvent.ACTION_UP: {
-                        setBackgroundAlpha(v, 255);
-                        float dx = event.getX();
-                        int toColumn = (int) (cell.x + dx / cellSize);
-                        toColumn = Math.min(Math.max(toColumn, 0), columnsCount - 1);
-                        Cell toCell = presenter.wantToMove(cell, toColumn);
-                        if (toCell != null) {
-                            presenter.moveTile(cell, toCell);
-                        }
-                        v.performClick();
-                        return true;
-                    }
-                    default: {
-                        return false;
-                    }
+    private OnTouchListener buildListener(Cell cell) {
+        return (v, event) -> {
+            if (!enabled) return true;
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN: {
+                    v.setAlpha(0.5F);
+                    return true;
                 }
-            };
-        }
+                case MotionEvent.ACTION_MOVE: {
+                    float dx = event.getX();
+                    int x = (int) (cell.x + dx / cellSize);
+//                        MoveToCell moveTo = presenter.wantToMove(cell, x);
+                    return true;
+                }
+                case MotionEvent.ACTION_UP: {
+                    v.setAlpha(1.0F);
+                    float dx = event.getX();
+                    int toColumn = (int) (cell.x + dx / cellSize);
+                    toColumn = Math.min(Math.max(toColumn, 0), columnsCount - 1);
+                    Cell toCell = presenter.wantToMove(cell, toColumn);
+                    if (toCell != null) {
+                        presenter.moveTile(cell, toCell);
+                    }
+                    v.performClick();
+                    return true;
+                }
+                default: {
+                    return false;
+                }
+            }
+        };
     }
 }

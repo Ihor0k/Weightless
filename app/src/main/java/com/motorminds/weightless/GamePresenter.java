@@ -64,20 +64,13 @@ public class GamePresenter implements GameContract.Presenter {
     @Override
     public void moveTile(Cell from, Cell to) {
         GameEvent event = game.move(from, to.x);
-        Animator animator = event.getAnimator();
-        animator.setDuration(100);
-        animator.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationStart(Animator animation) {
-                view.disable();
-            }
+        animateEvent(event);
+    }
 
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                view.enable();
-            }
-        });
-        animator.start();
+    @Override
+    public void createTile(Cell cell, int color) {
+        GameEvent event = game.create(cell, color);
+        animateEvent(event);
     }
 
     @Override
@@ -101,6 +94,23 @@ public class GamePresenter implements GameContract.Presenter {
         this.game = new Game(this.eventBuilder, this.colorGenerator);
         this.preferences.edit().clear().apply();
         initView();
+    }
+
+    private void animateEvent(GameEvent event) {
+        Animator animator = event.getAnimator();
+        animator.setDuration(100);
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                view.disable();
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                view.enable();
+            }
+        });
+        animator.start();
     }
 
     private void initView() {
