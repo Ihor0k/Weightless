@@ -1,5 +1,7 @@
-package com.motorminds.weightless;
+package com.motorminds.weightless.game;
 
+import com.motorminds.weightless.Cell;
+import com.motorminds.weightless.Tile;
 import com.motorminds.weightless.events.GameEvent;
 import com.motorminds.weightless.events.GameEventBuilder;
 

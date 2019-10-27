@@ -4,13 +4,15 @@ import android.content.Context;
 
 import androidx.core.content.ContextCompat;
 
+import com.motorminds.weightless.game.ColorGenerator;
+
 import java.util.Random;
 
-public class ColorGenerator {
+public class ColorGeneratorImpl implements ColorGenerator {
     private int[] palette;
     private Random random;
 
-    public ColorGenerator(Context context) {
+    public ColorGeneratorImpl(Context context) {
         this.palette = new int[]{
                 ContextCompat.getColor(context, R.color.cell1),
                 ContextCompat.getColor(context, R.color.cell2),

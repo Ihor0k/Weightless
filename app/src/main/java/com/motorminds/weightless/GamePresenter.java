@@ -9,13 +9,14 @@ import android.widget.TextView;
 
 import com.motorminds.weightless.events.GameEvent;
 import com.motorminds.weightless.events.GameEventBuilder;
+import com.motorminds.weightless.game.ColorGenerator;
+import com.motorminds.weightless.game.Game;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.text.BreakIterator;
 
 public class GamePresenter implements GameContract.Presenter {
     private TextView scoreView;
@@ -28,29 +29,13 @@ public class GamePresenter implements GameContract.Presenter {
     public GamePresenter(Context context, GameContract.View view, TextView scoreView, SharedPreferences preferences) {
         this.preferences = preferences;
         this.eventBuilder = new GameEventBuilder(view, scoreView);
-        this.colorGenerator = new ColorGenerator(context);
+        this.colorGenerator = new ColorGeneratorImpl(context);
         this.game = deserializeGame(preferences);
         this.view = view;
         this.scoreView = scoreView;
         view.setPresenter(this);
         initView();
     }
-
-//    @Override
-//    public MoveToCell wantToMove(Cell cell, int toColumn) {
-//        int x = cell.x;
-//        int y = cell.y;
-//        int toX = x;
-//        if (toColumn < x) {
-//            toX = game.leftAvailableColumn(x, y, toColumn);
-//        } else if (toColumn > x){
-//            toX = game.rightAvailableColumn(x, y, toColumn);
-//        }
-//        if (x == toX) return null;
-//        int toY = game.bottomAvailableRow(toX, y);
-//        return new MoveToCell(new Cell(toX, toY), null);
-//    }
-
 
     @Override
     public Cell wantToMove(Cell cell, int toColumn) {
