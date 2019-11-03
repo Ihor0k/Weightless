@@ -4,19 +4,17 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.graphics.drawable.GradientDrawable;
 import android.util.AttributeSet;
 import android.view.DragEvent;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.motorminds.weightless.Cell;
-import com.motorminds.weightless.ColorAndView;
 import com.motorminds.weightless.GameContract;
-import com.motorminds.weightless.R;
 import com.motorminds.weightless.Tile;
+import com.motorminds.weightless.TileAndView;
+import com.motorminds.weightless.game.GameField;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,8 +22,8 @@ import java.util.Map;
 public class BoardView extends ViewGroup implements GameContract.View {
     private GameContract.Presenter presenter;
 
-    private Map<Cell, View> tileViews;
-    private Map<View, Cell> dropZones;
+    private Map<Cell, TileView> tileViews;
+    private Map<Cell, DropZoneView> dropZones;
 
     private int rowsCount;
     private int columnsCount;
@@ -46,7 +44,7 @@ public class BoardView extends ViewGroup implements GameContract.View {
         int height = MeasureSpec.getSize(heightMeasureSpec);
         this.cellSize = Math.min(width / columnsCount, height / rowsCount);
         int childMeasureSpec = MeasureSpec.makeMeasureSpec(cellSize, MeasureSpec.EXACTLY);
-        for (View view : dropZones.keySet()) {
+        for (View view : dropZones.values()) {
             view.measure(childMeasureSpec, childMeasureSpec);
         }
         for (View view : tileViews.values()) {
@@ -61,12 +59,12 @@ public class BoardView extends ViewGroup implements GameContract.View {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        for (Map.Entry<View, Cell> viewCellEntry : dropZones.entrySet()) {
-            Cell cell = viewCellEntry.getValue();
-            View view = viewCellEntry.getKey();
+        for (Map.Entry<Cell, DropZoneView> cellViewEntry : dropZones.entrySet()) {
+            Cell cell = cellViewEntry.getKey();
+            View view = cellViewEntry.getValue();
             onCellLayout(cell, view);
         }
-        for (Map.Entry<Cell, View> cellViewEntry : tileViews.entrySet()) {
+        for (Map.Entry<Cell, TileView> cellViewEntry : tileViews.entrySet()) {
             Cell cell = cellViewEntry.getKey();
             View view = cellViewEntry.getValue();
             onCellLayout(cell, view);
@@ -88,70 +86,57 @@ public class BoardView extends ViewGroup implements GameContract.View {
     }
 
     @Override
-    public void init(Tile[][] field) {
+    public void init(GameField field) {
+        removeAllViews();
         this.tileViews.clear();
-        this.rowsCount = field.length;
-        this.columnsCount = rowsCount > 0 ? field[0].length : 0;
+        this.dropZones.clear();
+        this.rowsCount = field.ROWS_COUNT;
+        this.columnsCount = field.COLUMNS_COUNT;
 
-        for (int i = 0; i < field.length; i++) {
-            for (int j = 0; j < field[i].length; j++) {
-                Cell cell = new Cell(j, i);
+        for (int x = 0; x < columnsCount; x++) {
+            for (int y = 0; y < rowsCount; y++) {
+                Cell cell = new Cell(x, y);
                 createDropZone(cell);
-                Tile tile = field[i][j];
+                Tile tile = field.getTile(x, y);
                 if (tile == null) continue;
-                View tileView = createTileView(tile.getColor());
-                addTileView(cell, tileView);
+                createTileView(tile);
             }
         }
 
         this.enabled = true;
+
+        setOnDragListener(new BoardOnDragListener());
     }
 
     private void createDropZone(Cell cell) {
-        View view = new View(getContext());
-        dropZones.put(view, cell);
-        view.setOnDragListener((v, event) -> {
-            switch (event.getAction()) {
-                case DragEvent.ACTION_DROP: {
-                    ColorAndView colorAndView = (ColorAndView) event.getLocalState();
-                    View tileView = colorAndView.view;
-                    ViewGroup viewParent = (ViewGroup) tileView.getParent();
-                    viewParent.removeView(tileView);
-                    presenter.createTile(cell, colorAndView.color);
-                }
-            }
-            return true;
-        });
+        DropZoneView view = new DropZoneView(getContext());
+        dropZones.put(cell, view);
         addView(view);
     }
 
-    private View createTileView(int color) {
-        LayoutInflater inflater = LayoutInflater.from(getContext());
-        View tileLayout = inflater.inflate(R.layout.cell_layout, this, false);
-        setCellBackground(tileLayout, color);
-        return tileLayout;
-    }
-
-    private void addTileView(Cell cell, View tileView) {
-        OnTouchListener onTouchListener = buildListener(cell);
+    private void createTileView(Tile tile) {
+        TileView tileView = new TileView(getContext(), tile.color);
+        OnTouchListener onTouchListener = buildOnTouchListener(tile);
         tileView.setOnTouchListener(onTouchListener);
-        tileViews.put(cell, tileView);
+        tileViews.put(tile.cell, tileView);
         addView(tileView);
     }
 
     @Override
-    public Animator createTile(Cell cell, int color) {
-        View tileView = createTileView(color);
+    public Animator createTile(Tile tile) {
+        createTileView(tile);
+        TileView tileView = tileViews.get(tile.cell);
         tileView.setAlpha(0);
-        addTileView(cell, tileView);
         return ObjectAnimator.ofFloat(tileView, "alpha", 1);
     }
 
     @Override
     public Animator moveTile(Cell from, Cell to) {
-        View tileView = tileViews.remove(from);
+        TileView tileView = tileViews.remove(from);
         tileViews.put(to, tileView);
-        OnTouchListener onTouchListener = buildListener(to);
+        int color = tileView.getColor();
+        Tile tile = new Tile(to, color);
+        OnTouchListener onTouchListener = buildOnTouchListener(tile);
         tileView.setOnTouchListener(onTouchListener);
         ObjectAnimator animator = new ObjectAnimator();
         animator.setTarget(tileView);
@@ -197,42 +182,91 @@ public class BoardView extends ViewGroup implements GameContract.View {
         this.enabled = false;
     }
 
-    private void setCellBackground(View cellLayout, int color) {
-        View cellView = cellLayout.findViewById(R.id.cell_view);
-        GradientDrawable background = (GradientDrawable) cellView.getBackground();
-        background.setColor(color);
-    }
-
-    private OnTouchListener buildListener(Cell cell) {
+    private OnTouchListener buildOnTouchListener(Tile tile) {
         return (v, event) -> {
             if (!enabled) return true;
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN: {
-                    v.setAlpha(0.5F);
-                    return true;
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                TileAndView colorAndView = new TileAndView(tile, v);
+                return v.startDrag(null, new DragShadowBuilder(v), colorAndView, 0);
+            }
+            return false;
+        };
+    }
+
+    private class BoardOnDragListener implements View.OnDragListener {
+        private Highlightable highlightedTile;
+
+        private void unhighlight() {
+            if (highlightedTile != null) {
+                highlightedTile.unhighlight();
+                highlightedTile = null;
+            }
+        }
+
+        private void highlight(Cell cell, int color) {
+            if (cell == null) {
+                unhighlight();
+            } else {
+                Highlightable view = tileViews.get(cell);
+                if (view == null) {
+                    view = dropZones.get(cell);
                 }
-                case MotionEvent.ACTION_MOVE: {
-                    float dx = event.getX();
-                    int x = (int) (cell.x + dx / cellSize);
-//                        MoveToCell moveTo = presenter.wantToMove(cell, x);
-                    return true;
-                }
-                case MotionEvent.ACTION_UP: {
-                    v.setAlpha(1.0F);
-                    float dx = event.getX();
-                    int toColumn = (int) (cell.x + dx / cellSize);
-                    toColumn = Math.min(Math.max(toColumn, 0), columnsCount - 1);
-                    Cell toCell = presenter.wantToMove(cell, toColumn);
-                    if (toCell != null) {
-                        presenter.moveTile(cell, toCell);
-                    }
-                    v.performClick();
-                    return true;
-                }
-                default: {
-                    return false;
+                if (highlightedTile != view) {
+                    unhighlight();
+                    highlightedTile = view;
+                    highlightedTile.highlight(color);
                 }
             }
-        };
+        }
+
+        @Override
+        public boolean onDrag(View v, DragEvent event) {
+            switch (event.getAction()) {
+                case DragEvent.ACTION_DRAG_STARTED: {
+                    Object localState = event.getLocalState();
+                    if (localState instanceof TileAndView) {
+                        TileAndView tileAndView = (TileAndView) localState;
+                        tileAndView.view.setAlpha(0.5F);
+                    }
+                }
+                case DragEvent.ACTION_DRAG_LOCATION: {
+                    int x = (int) event.getX() / cellSize;
+                    Object localState = event.getLocalState();
+                    if (localState instanceof TileAndView) {
+                        TileAndView tileAndView = (TileAndView) localState;
+                        Cell toCell = presenter.wantToMove(tileAndView.tile.cell, x);
+                        highlight(toCell, tileAndView.tile.color);
+                    }
+                    break;
+                }
+                case DragEvent.ACTION_DROP: {
+                    int x = (int) event.getX() / cellSize;
+                    Object localState = event.getLocalState();
+                    if (localState instanceof TileAndView) {
+                        TileAndView tileAndView = (TileAndView) localState;
+                        tileAndView.view.setAlpha(1);
+                        Cell toCell = presenter.wantToMove(tileAndView.tile.cell, x);
+                        if (toCell != null) {
+                            presenter.moveTile(tileAndView.tile.cell, toCell);
+                        }
+                    }
+                    break;
+                }
+                case DragEvent.ACTION_DRAG_EXITED: {
+                    unhighlight();
+                    break;
+                }
+                case DragEvent.ACTION_DRAG_ENDED: {
+                    Object localState = event.getLocalState();
+                    if (localState instanceof TileAndView) {
+                        TileAndView tileAndView = (TileAndView) localState;
+                        tileAndView.view.setAlpha(1);
+                    }
+                    unhighlight();
+                    break;
+                }
+            }
+            return true;
+        }
     }
 }

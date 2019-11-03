@@ -5,7 +5,7 @@ import android.animation.Animator;
 import com.motorminds.weightless.Cell;
 import com.motorminds.weightless.GameContract;
 
-public class MoveEvent extends AbstractCellEvent{
+public class MoveEvent extends AbstractCellEvent {
     private final Cell from;
     private final Cell to;
 

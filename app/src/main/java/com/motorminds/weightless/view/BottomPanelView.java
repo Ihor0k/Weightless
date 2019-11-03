@@ -1,17 +1,15 @@
 package com.motorminds.weightless.view;
 
 import android.content.Context;
-import android.graphics.drawable.GradientDrawable;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.core.content.ContextCompat;
 
-import com.motorminds.weightless.R;
 import com.motorminds.weightless.ColorAndView;
+import com.motorminds.weightless.R;
 
 public class BottomPanelView extends ViewGroup {
     private static int MAX_CELLS = 7;
@@ -32,23 +30,18 @@ public class BottomPanelView extends ViewGroup {
     }
 
     private void createTileView(Context context, int color, int index) {
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View cellLayout = inflater.inflate(R.layout.cell_layout, this, false);
-        addView(cellLayout);
-        View cellView = cellLayout.findViewById(R.id.cell_view);
-        ((GradientDrawable) cellView.getBackground()).setColor(color);
+        TileView tileView = new TileView(context, color);
+        addView(tileView);
 
-        cellLayout.setOnTouchListener((v, event) -> {
+        tileView.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN: {
                     ColorAndView colorAndView = new ColorAndView(color, v);
                     return v.startDrag(null, new DragShadowBuilder(v), colorAndView, 0);
                 }
-                case MotionEvent.ACTION_UP: {
-                    return v.performClick();
-                }
                 default: {
                     return false;
+
                 }
             }
         });

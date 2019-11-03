@@ -11,6 +11,7 @@ import com.motorminds.weightless.events.GameEvent;
 import com.motorminds.weightless.events.GameEventBuilder;
 import com.motorminds.weightless.game.ColorGenerator;
 import com.motorminds.weightless.game.Game;
+import com.motorminds.weightless.game.GameField;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -39,24 +40,25 @@ public class GamePresenter implements GameContract.Presenter {
 
     @Override
     public Cell wantToMove(Cell cell, int toColumn) {
-        Tile[][] field = game.getField();
+        GameField field = game.getField();
         int x = cell.x;
         int y = cell.y;
         int dir = x < toColumn ? 1 : -1;
-        if (x == toColumn || field[y][x + dir] != null) {
+        if (x == toColumn || field.hasTile(x + dir, y)) {
             return null;
         }
-        if (toColumn < 0) {
-            toColumn = 0;
-        } else if (toColumn >= field[y].length) {
-            toColumn = field[y].length - 1;
-        }
-        int newX = toColumn;
-        for (int i = x + dir; i != toColumn; i += dir) {
-            if (field[y][i] != null) {
+        Tile tile = field.getTile(x, y);
+        int newX = x + dir;
+        for (int i = newX; i != toColumn + dir; i += dir) {
+            Tile toTile = field.getTile(i, y);
+            if (toTile == null) {
+                System.out.println(i + " -> continue");
                 newX = i;
-                break;
+                continue;
+            } else if (toTile.color == tile.color) {
+                newX = i;
             }
+            break;
         }
         return new Cell(newX, y);
     }
@@ -68,15 +70,15 @@ public class GamePresenter implements GameContract.Presenter {
     }
 
     @Override
-    public void createTile(Cell cell, int color) {
-        GameEvent event = game.create(cell, color);
+    public void createTile(Tile tile) {
+        GameEvent event = game.create(tile);
         animateEvent(event);
     }
 
     @Override
     public void serialize() {
         SharedPreferences.Editor editor = this.preferences.edit();
-        Tile[][] field = game.getField();
+        GameField field = game.getField();
         int score = game.getScore();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
@@ -124,7 +126,7 @@ public class GamePresenter implements GameContract.Presenter {
             byte[] fieldBytes = Base64.decode(fieldString, Base64.DEFAULT);
             ByteArrayInputStream bais = new ByteArrayInputStream(fieldBytes);
             try (ObjectInputStream ois = new ObjectInputStream(bais)) {
-                Tile[][] field = (Tile[][]) ois.readObject();
+                GameField field = (GameField) ois.readObject();
                 int score = preferences.getInt("score", 0);
                 return new Game(eventBuilder, colorGenerator, field, score);
             } catch (IOException | ClassNotFoundException e) {

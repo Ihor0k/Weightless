@@ -1,5 +1,7 @@
 package com.motorminds.weightless.view;
 
+import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
@@ -8,6 +10,8 @@ import android.graphics.drawable.Drawable;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.motorminds.weightless.R;
 
 public class SideLineView extends Drawable {
     private final Paint paint;
@@ -19,7 +23,12 @@ public class SideLineView extends Drawable {
     private float circle2Y;
 
 
-    public SideLineView(int color, int circleSize, int lineWidth) {
+    public SideLineView(Context context) {
+        Resources resources = context.getResources();
+        int color = resources.getColor(R.color.boardBackground);
+        int circleSize = resources.getDimensionPixelSize(R.dimen.side_line_circle_size);
+        int lineWidth = resources.getDimensionPixelSize(R.dimen.side_line_line_width);
+
         this.paint = new Paint();
         this.circleSize = circleSize;
         this.circleRadius = circleSize / 2F;

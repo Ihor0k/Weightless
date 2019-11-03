@@ -2,30 +2,26 @@ package com.motorminds.weightless.events;
 
 import android.animation.Animator;
 
-import com.motorminds.weightless.Cell;
 import com.motorminds.weightless.GameContract;
+import com.motorminds.weightless.Tile;
 
 public class CreateEvent extends AbstractCellEvent {
-    private final Cell cell;
-    private final int color;
+    private final Tile tile;
 
-    public CreateEvent(GameContract.View view, Cell cell, int value) {
+    public CreateEvent(GameContract.View view, Tile tile) {
         super(view);
-        this.cell = cell;
-        this.color = value;
+        this.tile = tile;
     }
 
     @Override
     public Animator getEventAnimator() {
-        return view.createTile(cell, color);
+        return view.createTile(tile);
     }
 
     @Override
     public String toString() {
         return "CreateEvent{" +
-                "cell=" + cell +
-                ", color=" + color +
-                ", " + super.toString() +
-                '}' ;
+                "tile=" + tile +
+                "} " + super.toString();
     }
 }

@@ -4,6 +4,7 @@ import android.widget.TextView;
 
 import com.motorminds.weightless.Cell;
 import com.motorminds.weightless.GameContract;
+import com.motorminds.weightless.Tile;
 
 public class GameEventBuilder {
     private GameContract.View view;
@@ -18,8 +19,8 @@ public class GameEventBuilder {
         return new MoveEvent(view, from, to);
     }
 
-    public GameEvent onCreate(Cell cell, int value) {
-        return new CreateEvent(view, cell, value);
+    public GameEvent onCreate(Tile tile) {
+        return new CreateEvent(view, tile);
     }
 
     public GameEvent onRemove(Cell cell) {

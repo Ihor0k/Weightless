@@ -2,11 +2,13 @@ package com.motorminds.weightless;
 
 import android.animation.Animator;
 
+import com.motorminds.weightless.game.GameField;
+
 public interface GameContract {
     interface View {
-        void init(Tile[][] field);
+        void init(GameField field);
 
-        Animator createTile(Cell cell, int color);
+        Animator createTile(Tile tile);
 
         Animator moveTile(Cell from, Cell to);
 
@@ -20,12 +22,11 @@ public interface GameContract {
     }
 
     interface Presenter {
-        //      MoveToCell wantToMove(Cell cell, int toColumn);
         Cell wantToMove(Cell cell, int toColumn);
 
         void moveTile(Cell from, Cell to);
 
-        void createTile(Cell cell, int color);
+        void createTile(Tile tile);
 
         void serialize();
 

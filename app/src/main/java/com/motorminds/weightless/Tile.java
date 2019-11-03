@@ -1,18 +1,16 @@
 package com.motorminds.weightless;
 
-public class Tile extends Cell {
-    private int color;
+public class Tile {
+    public final Cell cell;
+    public final int color;
 
-    public Tile(int x, int y, int color) {
-        super(x, y);
+    public Tile(Cell cell, int color) {
+        this.cell = cell;
         this.color = color;
     }
 
-    public int getColor() {
-        return color;
-    }
-
-    public void setColor(int color) {
+    public Tile(int x, int y, int color) {
+        this.cell = new Cell(x, y);
         this.color = color;
     }
 }

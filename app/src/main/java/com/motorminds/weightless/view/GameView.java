@@ -39,13 +39,8 @@ public class GameView extends ViewGroup {
         addView(this.boardView);
         addView(this.bottomPanelView);
 
-        Resources resources = context.getResources();
-        int sideLineColor = resources.getColor(R.color.boardBackground);
-        int circleSize = resources.getDimensionPixelSize(R.dimen.side_line_circle_size);
-        int lineWidth = resources.getDimensionPixelSize(R.dimen.side_line_line_width);
-
-        this.leftLine = new SideLineView(sideLineColor, circleSize, lineWidth);
-        this.rightLine = new SideLineView(sideLineColor, circleSize, lineWidth);
+        this.leftLine = new SideLineView(context);
+        this.rightLine = new SideLineView(context);
     }
 
     @Override
