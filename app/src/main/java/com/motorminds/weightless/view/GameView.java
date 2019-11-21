@@ -21,9 +21,11 @@ public class GameView extends ViewGroup {
     private Drawable leftLine;
     private Drawable rightLine;
 
-    public GameView(Context context, AttributeSet attrs) {
-        super(context, attrs);
+    public GameView(Context context) {
+        super(context);
         Resources resources = getResources();
+        int backgroundColor = resources.getColor(R.color.background);
+        setBackgroundColor(backgroundColor);
         this.SIDE_LINE_VERTICAL_MARGIN = resources.getDimensionPixelSize(R.dimen.side_line_vertical_margin);
         this.SIDE_LINE_HORIZONTAL_MARGIN = resources.getDimensionPixelSize(R.dimen.side_line_horizontal_margin);
         setWillNotDraw(false);

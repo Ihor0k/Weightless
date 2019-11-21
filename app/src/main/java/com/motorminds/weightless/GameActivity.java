@@ -8,6 +8,8 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.motorminds.weightless.view.GameView;
+
 public class GameActivity extends AppCompatActivity {
     private GameContract.Presenter presenter;
 
@@ -18,7 +20,8 @@ public class GameActivity extends AppCompatActivity {
         //Remove notification bar
         this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        setContentView(R.layout.activity_game);
+        GameView gameView = new GameView(this);
+        setContentView(gameView);
 
         GameContract.View boardView = findViewById(R.id.board);
         TextView scoreView = findViewById(R.id.score);

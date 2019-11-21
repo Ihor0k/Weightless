@@ -38,7 +38,6 @@
             android:layout_below="@id/highScore"
             android:layout_centerHorizontal="true"
             android:background="@drawable/score_background"
-            android:text="12"
             android:textColor="@android:color/white"
             android:textSize="20sp" />
     </RelativeLayout>
