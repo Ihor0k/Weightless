@@ -26,6 +26,8 @@ public interface GameContract {
 
         void moveTile(Cell from, Cell to);
 
+        Cell wantToCreate(int column);
+
         void createTile(Tile tile);
 
         void serialize();

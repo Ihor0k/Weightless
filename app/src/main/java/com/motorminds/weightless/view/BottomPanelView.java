@@ -36,14 +36,11 @@ public class BottomPanelView extends ViewGroup {
         tileView.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN: {
-                    ColorAndView colorAndView = new ColorAndView(color, v);
-                    return v.startDrag(null, new DragShadowBuilder(v), colorAndView, 0);
-                }
-                default: {
-                    return false;
-
+                    ColorAndView colorAndView = new ColorAndView(color, (TileView) v);
+                    return v.startDrag(null, new InvisibleDragShadowBuilder(), colorAndView, 0);
                 }
             }
+            return false;
         });
     }
 

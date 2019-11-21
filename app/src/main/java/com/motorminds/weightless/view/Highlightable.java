@@ -1,6 +1,6 @@
 package com.motorminds.weightless.view;
 
-public interface Highlightable {
-    void highlight(int color);
+interface Highlightable {
+    void highlight();
     void unhighlight();
 }

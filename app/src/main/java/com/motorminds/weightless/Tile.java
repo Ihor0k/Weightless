@@ -13,4 +13,12 @@ public class Tile {
         this.cell = new Cell(x, y);
         this.color = color;
     }
+
+    @Override
+    public String toString() {
+        return "Tile{" +
+                "cell=" + cell +
+                ", color=" + color +
+                '}';
+    }
 }

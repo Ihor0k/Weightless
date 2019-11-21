@@ -1,12 +1,12 @@
 package com.motorminds.weightless;
 
-import android.view.View;
+import com.motorminds.weightless.view.TileView;
 
 public class ColorAndView {
     public final int color;
-    public final View view;
+    public final TileView view;
 
-    public ColorAndView(int color, View view) {
+    public ColorAndView(int color, TileView view) {
         this.color = color;
         this.view = view;
     }

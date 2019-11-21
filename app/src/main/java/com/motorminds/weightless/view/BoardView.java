@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.motorminds.weightless.Cell;
+import com.motorminds.weightless.ColorAndView;
 import com.motorminds.weightless.GameContract;
 import com.motorminds.weightless.Tile;
 import com.motorminds.weightless.TileAndView;
@@ -186,8 +187,8 @@ public class BoardView extends ViewGroup implements GameContract.View {
         return (v, event) -> {
             if (!enabled) return true;
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                TileAndView colorAndView = new TileAndView(tile, v);
-                return v.startDrag(null, new DragShadowBuilder(v), colorAndView, 0);
+                TileAndView colorAndView = new TileAndView(tile, (TileView) v);
+                return v.startDrag(null, new InvisibleDragShadowBuilder(), colorAndView, 0);
             }
             return false;
         };
@@ -209,12 +210,17 @@ public class BoardView extends ViewGroup implements GameContract.View {
             } else {
                 Highlightable view = tileViews.get(cell);
                 if (view == null) {
-                    view = dropZones.get(cell);
+                    DropZoneView dropZoneView = dropZones.get(cell);
+                    if (dropZoneView != null) {
+                        dropZoneView.setColor(color);
+                    }
+                    view = dropZoneView;
+
                 }
                 if (highlightedTile != view) {
                     unhighlight();
                     highlightedTile = view;
-                    highlightedTile.highlight(color);
+                    highlightedTile.highlight();
                 }
             }
         }
@@ -224,10 +230,16 @@ public class BoardView extends ViewGroup implements GameContract.View {
             switch (event.getAction()) {
                 case DragEvent.ACTION_DRAG_STARTED: {
                     Object localState = event.getLocalState();
+                    Highlightable view = null;
                     if (localState instanceof TileAndView) {
-                        TileAndView tileAndView = (TileAndView) localState;
-                        tileAndView.view.setAlpha(0.5F);
+                        view = ((TileAndView) localState).view;
+                    } else if (localState instanceof ColorAndView) {
+                        view = ((ColorAndView) localState).view;
                     }
+                    if (view != null) {
+                        view.highlight();
+                    }
+                    break;
                 }
                 case DragEvent.ACTION_DRAG_LOCATION: {
                     int x = (int) event.getX() / cellSize;
@@ -236,6 +248,10 @@ public class BoardView extends ViewGroup implements GameContract.View {
                         TileAndView tileAndView = (TileAndView) localState;
                         Cell toCell = presenter.wantToMove(tileAndView.tile.cell, x);
                         highlight(toCell, tileAndView.tile.color);
+                    } else if (localState instanceof ColorAndView) {
+                        ColorAndView colorAndView = (ColorAndView) localState;
+                        Cell cell = presenter.wantToCreate(x);
+                        highlight(cell, colorAndView.color);
                     }
                     break;
                 }
@@ -244,10 +260,18 @@ public class BoardView extends ViewGroup implements GameContract.View {
                     Object localState = event.getLocalState();
                     if (localState instanceof TileAndView) {
                         TileAndView tileAndView = (TileAndView) localState;
-                        tileAndView.view.setAlpha(1);
+                        tileAndView.view.unhighlight();
                         Cell toCell = presenter.wantToMove(tileAndView.tile.cell, x);
                         if (toCell != null) {
                             presenter.moveTile(tileAndView.tile.cell, toCell);
+                        }
+                    } else if (localState instanceof ColorAndView) {
+                        ColorAndView colorAndView = (ColorAndView) localState;
+                        colorAndView.view.unhighlight();
+                        Cell cell = presenter.wantToCreate(x);
+                        if (cell != null) {
+                            Tile tile = new Tile(cell, colorAndView.color);
+                            presenter.createTile(tile);
                         }
                     }
                     break;
@@ -260,7 +284,10 @@ public class BoardView extends ViewGroup implements GameContract.View {
                     Object localState = event.getLocalState();
                     if (localState instanceof TileAndView) {
                         TileAndView tileAndView = (TileAndView) localState;
-                        tileAndView.view.setAlpha(1);
+                        tileAndView.view.unhighlight();
+                    } else if (localState instanceof ColorAndView) {
+                        ColorAndView colorAndView = (ColorAndView) localState;
+                        colorAndView.view.unhighlight();
                     }
                     unhighlight();
                     break;

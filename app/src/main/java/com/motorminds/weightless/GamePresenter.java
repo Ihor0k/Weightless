@@ -52,7 +52,6 @@ public class GamePresenter implements GameContract.Presenter {
         for (int i = newX; i != toColumn + dir; i += dir) {
             Tile toTile = field.getTile(i, y);
             if (toTile == null) {
-                System.out.println(i + " -> continue");
                 newX = i;
                 continue;
             } else if (toTile.color == tile.color) {
@@ -67,6 +66,17 @@ public class GamePresenter implements GameContract.Presenter {
     public void moveTile(Cell from, Cell to) {
         GameEvent event = game.move(from, to.x);
         animateEvent(event);
+    }
+
+    @Override
+    public Cell wantToCreate(int column) {
+        GameField field = game.getField();
+        for (int y = field.ROWS_COUNT - 1; y >= 0; y--) {
+            if (field.hasNoTile(column, y)) {
+                return new Cell(column, y);
+            }
+        }
+        return null;
     }
 
     @Override

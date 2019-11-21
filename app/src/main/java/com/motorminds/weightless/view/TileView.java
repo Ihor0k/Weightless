@@ -25,7 +25,7 @@ public class TileView extends AbstractCellView {
         return color;
     }
 
-    public void highlight(int color) {
+    public void highlight() {
         setColor(highlightColor);
     }
 
