@@ -19,6 +19,7 @@ public class Game {
     private final Random random;
 
     private int score;
+    private int currentMoveScore;
 
     public Game(GameEventBuilder eventBuilder, ColorGenerator colorGenerator) {
         this(eventBuilder, colorGenerator, null, 0);
@@ -34,6 +35,7 @@ public class Game {
             initField();
         }
         this.score = score;
+        this.currentMoveScore = 0;
     }
 
     private void initField() {
@@ -63,6 +65,8 @@ public class Game {
             }
             event.withEvents(subEvent1, subEvent2);
         }
+        this.score += currentMoveScore;
+        this.currentMoveScore = 0;
         GameEvent event2 = generateRandomTile();
         event.beforeEvent(event2);
         field.dumpField();
@@ -99,8 +103,9 @@ public class Game {
     }
 
     private GameEvent incrementScore() {
-        this.score += 1;
-        return eventBuilder.onScoreEvent(1);
+        int incVal = currentMoveScore == 0 ? 1 : currentMoveScore * 2;
+        this.currentMoveScore += incVal;
+        return eventBuilder.onScoreEvent(incVal);
     }
 
     private GameEvent moveDown(int x, int y) {
