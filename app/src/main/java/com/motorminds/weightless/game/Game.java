@@ -20,6 +20,7 @@ public class Game {
 
     private int score;
     private int currentMoveScore;
+    private boolean gameOver;
 
     public Game(GameEventBuilder eventBuilder, ColorGenerator colorGenerator) {
         this(eventBuilder, colorGenerator, null, 0);
@@ -36,6 +37,7 @@ public class Game {
         }
         this.score = score;
         this.currentMoveScore = 0;
+        this.gameOver = false;
     }
 
     private void initField() {
@@ -156,6 +158,10 @@ public class Game {
     private GameEvent generateRandomTile() {
         int value = colorGenerator.nextColor();
         List<Cell> emptyCells = availableEmptyCells();
+        if (emptyCells.isEmpty()) {
+            this.gameOver = true;
+            return eventBuilder.nullEvent();
+        }
         int column = random.nextInt(emptyCells.size());
         Cell cell = emptyCells.get(column);
         Tile tile = new Tile(cell.x, cell.y, value);
@@ -224,5 +230,9 @@ public class Game {
 
     public int getScore() {
         return score;
+    }
+
+    public boolean isGameOver() {
+        return gameOver;
     }
 }

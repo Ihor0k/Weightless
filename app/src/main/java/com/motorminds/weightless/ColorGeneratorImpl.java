@@ -14,10 +14,10 @@ public class ColorGeneratorImpl implements ColorGenerator {
 
     public ColorGeneratorImpl(Context context) {
         this.palette = new int[]{
-                ContextCompat.getColor(context, R.color.cell1),
-                ContextCompat.getColor(context, R.color.cell2),
-                ContextCompat.getColor(context, R.color.cell3),
-                ContextCompat.getColor(context, R.color.cell4)
+                ContextCompat.getColor(context, R.color.cellYellow),
+                ContextCompat.getColor(context, R.color.cellRed),
+                ContextCompat.getColor(context, R.color.cellGreen),
+                ContextCompat.getColor(context, R.color.cellWhite)
         };
         this.random = new Random();
     }

@@ -12,6 +12,7 @@ import com.motorminds.weightless.events.GameEventBuilder;
 import com.motorminds.weightless.game.ColorGenerator;
 import com.motorminds.weightless.game.Game;
 import com.motorminds.weightless.game.GameField;
+import com.motorminds.weightless.view.GameOverPopup;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -25,15 +26,17 @@ public class GamePresenter implements GameContract.Presenter {
     private GameContract.View view;
     private GameEventBuilder eventBuilder;
     private ColorGenerator colorGenerator;
+    private GameOverPopup gameOverPopup;
     private SharedPreferences preferences;
 
-    public GamePresenter(Context context, GameContract.View view, TextView scoreView, SharedPreferences preferences) {
+    public GamePresenter(Context context, GameContract.View view, TextView scoreView, GameOverPopup gameOverPopup, SharedPreferences preferences) {
         this.preferences = preferences;
         this.eventBuilder = new GameEventBuilder(view, scoreView);
         this.colorGenerator = new ColorGeneratorImpl(context);
         this.game = deserializeGame(preferences);
         this.view = view;
         this.scoreView = scoreView;
+        this.gameOverPopup = gameOverPopup;
         view.setPresenter(this);
         initView();
     }
@@ -66,6 +69,9 @@ public class GamePresenter implements GameContract.Presenter {
     public void moveTile(Cell from, Cell to) {
         GameEvent event = game.move(from, to.x);
         animateEvent(event);
+        if (game.isGameOver()) {
+            gameOverPopup.show(game.getScore());
+        }
     }
 
     @Override
@@ -103,6 +109,7 @@ public class GamePresenter implements GameContract.Presenter {
 
     @Override
     public void restart() {
+        gameOverPopup.hide();
         this.game = new Game(this.eventBuilder, this.colorGenerator);
         this.preferences.edit().clear().apply();
         initView();

@@ -2,8 +2,8 @@
 <resources>
     <color name="boardBackground">#33373E</color>
     <color name="background">#F5F3EE</color>
-    <color name="cell1">#FFE500</color>
-    <color name="cell2">#DF2D31</color>
-    <color name="cell3">#3BAD4C</color>
-    <color name="cell4">#F5F3EE</color>
+    <color name="cellYellow">#FFE500</color>
+    <color name="cellRed">#DF2D31</color>
+    <color name="cellGreen">#3BAD4C</color>
+    <color name="cellWhite">#F5F3EE</color>
 </resources>

@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.motorminds.weightless.view.GameOverPopup;
 import com.motorminds.weightless.view.GameView;
 
 public class GameActivity extends AppCompatActivity {
@@ -26,7 +27,8 @@ public class GameActivity extends AppCompatActivity {
         GameContract.View boardView = findViewById(R.id.board);
         TextView scoreView = findViewById(R.id.score);
         SharedPreferences preferences = getPreferences(MODE_PRIVATE);
-        this.presenter = new GamePresenter(this, boardView, scoreView, preferences);
+        GameOverPopup gameOverPopup = new GameOverPopup(this, gameView);
+        this.presenter = new GamePresenter(this, boardView, scoreView, gameOverPopup, preferences);
     }
 
     @Override

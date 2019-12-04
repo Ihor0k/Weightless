@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@color/boardBackground"
+    android:paddingLeft="24dp"
+    android:paddingTop="8dp"
+    android:paddingRight="24dp"
+    android:paddingBottom="24dp">
+
+    <LinearLayout
+        android:id="@+id/score_with_cubes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_game_over_cubes" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/game_over_score_box"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/game_over_score"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="9000"
+                android:textColor="@color/background"
+                android:textSize="20sp" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/score_with_cubes"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="24dp"
+        android:orientation="horizontal">
+
+        <com.motorminds.weightless.view.IconButton
+            android:onClick="onRestart"
+            android:id="@+id/restart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_new_game"
+            app:backgroundColor="@color/cellRed"
+            app:cornerRadius="16dp"
+            app:minPadding="32dp"
+            app:sizeBy="width" />
+
+        <com.motorminds.weightless.view.IconButton
+            android:id="@+id/market"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
+            android:layout_marginLeft="8dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_market"
+            app:backgroundColor="@color/cellYellow"
+            app:cornerRadius="16dp"
+            app:minPadding="32dp"
+            app:sizeBy="width" />
+    </LinearLayout>
+
+</RelativeLayout>

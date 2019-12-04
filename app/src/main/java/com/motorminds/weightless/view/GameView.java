@@ -33,7 +33,7 @@ public class GameView extends ViewGroup {
     }
 
     private void initChildren(Context context) {
-        LayoutInflater inflater = LayoutInflater.from(getContext());
+        LayoutInflater inflater = LayoutInflater.from(context);
         this.topPanelView = inflater.inflate(R.layout.top_panel_layout, this, false);
         this.boardView = inflater.inflate(R.layout.board_layout, this, false);
         this.bottomPanelView = inflater.inflate(R.layout.bottom_panel_layout, this, false);

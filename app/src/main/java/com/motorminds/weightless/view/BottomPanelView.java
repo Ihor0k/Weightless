@@ -20,13 +20,13 @@ public class BottomPanelView extends ViewGroup {
     }
 
     private void initTileView(Context context) {
-        createTileView(context, ContextCompat.getColor(context, R.color.cell1), 0);
-        createTileView(context, ContextCompat.getColor(context, R.color.cell2), 1);
-        createTileView(context, ContextCompat.getColor(context, R.color.cell4), 2);
-        createTileView(context, ContextCompat.getColor(context, R.color.cell4), 3);
-        createTileView(context, ContextCompat.getColor(context, R.color.cell1), 4);
-        createTileView(context, ContextCompat.getColor(context, R.color.cell2), 5);
-        createTileView(context, ContextCompat.getColor(context, R.color.cell3), 6);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellYellow), 0);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellRed), 1);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellWhite), 2);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellWhite), 3);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellYellow), 4);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellRed), 5);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellGreen), 6);
     }
 
     private void createTileView(Context context, int color, int index) {
