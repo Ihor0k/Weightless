@@ -8,20 +8,18 @@ import com.motorminds.weightless.Tile;
 public class CreateEvent extends AbstractCellEvent {
     private final Tile tile;
 
-    public CreateEvent(GameContract.View view, Tile tile) {
+    CreateEvent(GameContract.View view, Tile tile) {
         super(view);
         this.tile = tile;
     }
 
     @Override
-    public Animator getEventAnimator() {
+    public Animator getAnimator() {
         return view.createTile(tile);
     }
 
     @Override
     public String toString() {
-        return "CreateEvent{" +
-                "tile=" + tile +
-                "} " + super.toString();
+        return "Create{" + tile + "}";
     }
 }

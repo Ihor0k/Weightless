@@ -7,17 +7,17 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.widget.TextView;
 
-public class ScoreEvent extends AbstractGameEvent {
+public class ScoreEvent implements GameEvent {
     private final TextView view;
     private final int value;
 
-    public ScoreEvent(TextView view, int value) {
+    ScoreEvent(TextView view, int value) {
         this.value = value;
         this.view = view;
     }
 
     @Override
-    protected Animator getEventAnimator() {
+    public Animator getAnimator() {
         ObjectAnimator animatorX = ObjectAnimator.ofFloat(view, "scaleX", 1.1f);
         animatorX.setRepeatMode(ValueAnimator.REVERSE);
         animatorX.setRepeatCount(1);
@@ -36,5 +36,10 @@ public class ScoreEvent extends AbstractGameEvent {
         AnimatorSet animator = new AnimatorSet();
         animator.playTogether(animatorX, animatorY);
         return animator;
+    }
+
+    @Override
+    public String toString() {
+        return "Score{" + value + '}';
     }
 }

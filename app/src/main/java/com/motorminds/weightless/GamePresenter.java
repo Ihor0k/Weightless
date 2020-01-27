@@ -8,7 +8,7 @@ import android.util.Base64;
 import android.widget.TextView;
 
 import com.motorminds.weightless.events.GameEvent;
-import com.motorminds.weightless.events.GameEventBuilder;
+import com.motorminds.weightless.events.GameEventFactory;
 import com.motorminds.weightless.game.ColorGenerator;
 import com.motorminds.weightless.game.Game;
 import com.motorminds.weightless.game.GameField;
@@ -24,14 +24,14 @@ public class GamePresenter implements GameContract.Presenter {
     private TextView scoreView;
     private Game game;
     private GameContract.View view;
-    private GameEventBuilder eventBuilder;
+    private GameEventFactory eventFactory;
     private ColorGenerator colorGenerator;
     private GameOverPopup gameOverPopup;
     private SharedPreferences preferences;
 
     public GamePresenter(Context context, GameContract.View view, TextView scoreView, GameOverPopup gameOverPopup, SharedPreferences preferences) {
         this.preferences = preferences;
-        this.eventBuilder = new GameEventBuilder(view, scoreView);
+        this.eventFactory = new GameEventFactory(view, scoreView);
         this.colorGenerator = new ColorGeneratorImpl(context);
         this.game = deserializeGame(preferences);
         this.view = view;
@@ -43,31 +43,14 @@ public class GamePresenter implements GameContract.Presenter {
 
     @Override
     public Cell wantToMove(Cell cell, int toColumn) {
-        GameField field = game.getField();
-        int x = cell.x;
-        int y = cell.y;
-        int dir = x < toColumn ? 1 : -1;
-        if (x == toColumn || field.hasTile(x + dir, y)) {
-            return null;
-        }
-        Tile tile = field.getTile(x, y);
-        int newX = x + dir;
-        for (int i = newX; i != toColumn + dir; i += dir) {
-            Tile toTile = field.getTile(i, y);
-            if (toTile == null) {
-                newX = i;
-                continue;
-            } else if (toTile.color == tile.color) {
-                newX = i;
-            }
-            break;
-        }
-        return new Cell(newX, y);
+        int newX = game.wantToMove(cell, toColumn);
+        if (cell.x == newX) return null;
+        return new Cell(newX, cell.y);
     }
 
     @Override
     public void moveTile(Cell from, Cell to) {
-        GameEvent event = game.move(from, to.x);
+        GameEvent event = game.moveTile(from, to.x);
         animateEvent(event);
         if (game.isGameOver()) {
             gameOverPopup.show(game.getScore());
@@ -87,7 +70,7 @@ public class GamePresenter implements GameContract.Presenter {
 
     @Override
     public void createTile(Tile tile) {
-        GameEvent event = game.create(tile);
+        GameEvent event = game.createTile(tile);
         animateEvent(event);
     }
 
@@ -110,14 +93,15 @@ public class GamePresenter implements GameContract.Presenter {
     @Override
     public void restart() {
         gameOverPopup.hide();
-        this.game = new Game(this.eventBuilder, this.colorGenerator);
+        this.game = new Game(this.eventFactory, this.colorGenerator);
         this.preferences.edit().clear().apply();
         initView();
     }
 
     private void animateEvent(GameEvent event) {
+        if (event == null) return;
         Animator animator = event.getAnimator();
-        animator.setDuration(100);
+        animator.setDuration(150);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animation) {
@@ -145,13 +129,13 @@ public class GamePresenter implements GameContract.Presenter {
             try (ObjectInputStream ois = new ObjectInputStream(bais)) {
                 GameField field = (GameField) ois.readObject();
                 int score = preferences.getInt("score", 0);
-                return new Game(eventBuilder, colorGenerator, field, score);
+                return new Game(eventFactory, colorGenerator, field, score);
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
-                return new Game(eventBuilder, colorGenerator);
+                return new Game(eventFactory, colorGenerator);
             }
         } else {
-            return new Game(eventBuilder, colorGenerator);
+            return new Game(eventFactory, colorGenerator);
         }
     }
 }

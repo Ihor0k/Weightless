@@ -28,9 +28,6 @@ public class Cell implements Serializable {
 
     @Override
     public String toString() {
-        return "Cell{" +
-                "x=" + x +
-                ", y=" + y +
-                '}';
+        return "{" + x + ',' + y+ '}';
     }
 }

@@ -3,10 +3,11 @@ package com.motorminds.weightless.game;
 import com.motorminds.weightless.Cell;
 import com.motorminds.weightless.Tile;
 import com.motorminds.weightless.events.GameEvent;
-import com.motorminds.weightless.events.GameEventBuilder;
+import com.motorminds.weightless.events.GameEventFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -14,20 +15,22 @@ public class Game {
     private final static int INIT_CELLS_COUNT = 9;
 
     private GameField field;
-    private final GameEventBuilder eventBuilder;
+    private final GameEventFactory eventFactory;
     private final ColorGenerator colorGenerator;
     private final Random random;
 
     private int score;
     private int currentMoveScore;
+    private int currentMoveCombo;
+    private GameEventFactory.GameEventBuilder eventBuilder;
     private boolean gameOver;
 
-    public Game(GameEventBuilder eventBuilder, ColorGenerator colorGenerator) {
-        this(eventBuilder, colorGenerator, null, 0);
+    public Game(GameEventFactory eventFactory, ColorGenerator colorGenerator) {
+        this(eventFactory, colorGenerator, null, 0);
     }
 
-    public Game(GameEventBuilder eventBuilder, ColorGenerator colorGenerator, GameField field, int score) {
-        this.eventBuilder = eventBuilder;
+    public Game(GameEventFactory eventFactory, ColorGenerator colorGenerator, GameField field, int score) {
+        this.eventFactory = eventFactory;
         this.colorGenerator = colorGenerator;
         this.random = new Random();
         if (field != null) {
@@ -37,6 +40,7 @@ public class Game {
         }
         this.score = score;
         this.currentMoveScore = 0;
+        this.currentMoveCombo = 1;
         this.gameOver = false;
     }
 
@@ -47,112 +51,173 @@ public class Game {
         }
     }
 
-    public GameEvent move(Cell from, int toColumn) {
-        int fromX = from.x;
-        int y = from.y;
-        GameEvent event;
-        if (field.hasNoTile(toColumn, y)) {
-            event = moveTile(fromX, y, toColumn, y);
-            GameEvent subEvent1 = checkTopTile(fromX, y);
-            GameEvent subEvent2 = moveDown(toColumn, y);
-            event.withEvents(subEvent1, subEvent2);
-        } else {
-            int toX = toColumn < fromX ? toColumn + 1 : toColumn - 1;
-            event = moveTile(fromX, y, toX, y);
-            GameEvent subEvent1 = checkTopTile(fromX, y);
-            GameEvent subEvent2 = pushTiles(toX, y, toColumn, y);
-            if (field.hasTile(toX, y)) {
-                GameEvent subEvent3 = moveDown(toX, y);
-                event.withEvent(subEvent3);
-            }
-            event.withEvents(subEvent1, subEvent2);
+    public GameEvent moveTile(Cell cell, int toColumn) {
+        int fromX = cell.x;
+        int y = cell.y;
+        int toX = wantToMove(cell, toColumn);
+        if (fromX == toX) {
+            return null;
         }
+        GameEvent event;
+        if (field.hasTile(toX, y)) {
+            int realToX = toX < fromX ? toX + 1 : toX - 1;
+            GameEvent moveEvent = moveTile(fromX, y, realToX, y);
+            this.eventBuilder = eventFactory.builder(moveEvent);
+            GameEvent checkFromEvent = checkColumn(fromX);
+            GameEvent pushEvent = pushTiles(new Cell(realToX, y), new Cell(toX, y));
+            GameEvent pushAndCheckFrom = eventBuilder.playTogether(pushEvent, checkFromEvent);
+            GameEvent checkToEvent = checkColumn(toX);
+            event = eventBuilder.playSequentially(moveEvent, pushAndCheckFrom, checkToEvent);
+        } else {
+            GameEvent moveEvent = moveTile(fromX, y, toX, y);
+            this.eventBuilder = eventFactory.builder(moveEvent);
+            GameEvent checkFromEvent = checkColumn(fromX);
+            GameEvent checkToEvent = checkColumn(toX);
+            GameEvent checkFromEvents = eventBuilder.playTogether(checkFromEvent, checkToEvent);
+            event = eventBuilder.playSequentially(moveEvent, checkFromEvents);
+        }
+        GameEvent generateTileEvent = generateRandomTile();
+        eventBuilder.append(event, generateTileEvent);
         this.score += currentMoveScore;
         this.currentMoveScore = 0;
-        GameEvent event2 = generateRandomTile();
-        event.beforeEvent(event2);
+        this.currentMoveCombo = 1;
         field.dumpField();
-        return event;
+        return eventBuilder.build();
     }
 
-    public GameEvent create(Tile tile) {
-        return setTile(tile);
-    }
-
-    private GameEvent pushTiles(int tile1X, int tile1Y, int tile2X, int tile2Y) {
-        Tile tile1 = field.getTile(tile1X, tile1Y);
-        Tile tile2 = field.getTile(tile2X, tile2Y);
-        if (tile1 == null || tile2 == null) {
-            return eventBuilder.nullEvent();
+    /**
+     * Check all the intermediate cells between current
+     * position and the desired one and returns allowed
+     * column into which the cell can be moved
+     *
+     * @param cell     cell
+     * @param toColumn column in which user wants to move the cell
+     * @return column in which cell can be moved
+     */
+    public int wantToMove(Cell cell, int toColumn) {
+        int x = cell.x;
+        int y = cell.y;
+        int dir = x < toColumn ? 1 : -1;
+        if (x == toColumn || field.hasTile(x + dir, y)) {
+            return x;
         }
-        int tile1Value = tile1.color;
-        int tile2Value = tile2.color;
-        if (tile1Value == tile2Value) {
-            GameEvent event1 = removeTileAfterPushing(tile1X, tile1Y);
-            GameEvent event2 = removeTileAfterPushing(tile2X, tile2Y);
-            GameEvent event3 = incrementScore();
-            return eventBuilder.onMultiEvents(event1, event2, event3);
-        } else {
-            return eventBuilder.nullEvent();
+        Tile tile = field.getTile(x, y);
+        int newX = x + dir;
+        for (int i = newX; i != toColumn + dir; i += dir) {
+            Tile toTile = field.getTile(i, y);
+            if (toTile == null) {
+                newX = i;
+            } else if (toTile.color == tile.color) {
+                return i;
+            } else {
+                return newX;
+            }
         }
+        return newX;
     }
 
-    private GameEvent removeTileAfterPushing(int x, int y) {
-        GameEvent event = removeTile(x, y);
-        GameEvent subEvent = checkTopTile(x, y);
-        event.withEvent(subEvent);
-        return event;
+    public GameEvent createTile(Tile tile) {
+        field.setTile(tile);
+        return eventFactory.create(tile);
     }
 
-    private GameEvent incrementScore() {
-        int incVal = currentMoveScore == 0 ? 1 : currentMoveScore * 2;
+    private GameEvent pushTiles(Cell... cells) {
+        GameEventFactory.MultiEventBuilder eventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
+        for (Cell cell : cells) {
+            GameEvent event = removeTile(cell.x, cell.y);
+            eventBuilder.add(event);
+        }
+        GameEvent event = incrementScore(cells.length);
+        eventBuilder.add(event);
+        return eventBuilder.build();
+    }
+
+    private GameEvent incrementScore(int val) {
+        int incVal = currentMoveCombo * val;
+        this.currentMoveCombo *= 2;
         this.currentMoveScore += incVal;
-        return eventBuilder.onScoreEvent(incVal);
+        return eventFactory.score(incVal);
     }
 
-    private GameEvent moveDown(int x, int y) {
-        int newY = bottomAvailableRow(x, y);
-        if (newY <= y) {
-            return eventBuilder.nullEvent();
+    private GameEvent checkColumn(int x) {
+        int lowerY = lowerAvailableRow(x);
+        if (!hasTilesAbove(x, lowerY)) {
+            return null;
         }
-        GameEvent event1 = moveTile(x, y, x, newY);
-        GameEvent event2 = checkTopTile(x, y);
-        event1.withEvent(event2);
-        int bottomTileY = newY + 1;
-        if (field.isValidPosition(x, bottomTileY)) {
-            GameEvent event3 = pushTiles(x, newY, x, bottomTileY);
-            event2.withEvent(event3);
-        }
-        return event1;
+        GameEvent stackEvent = stackTilesInColumn(x, lowerY);
+        GameEvent pushEvent = pushTilesInColumn(x, lowerY);
+        GameEvent subEvent = checkColumn(x);
+        return eventBuilder.playSequentially(stackEvent, pushEvent, subEvent);
     }
 
-    private GameEvent checkTopTile(int x, int y) {
-        int topY = y - 1;
-        if (field.isValidPosition(x, topY) && field.hasTile(x, topY)) {
-            return moveDown(x, topY);
+    private boolean hasTilesAbove(int x, int y) {
+        for (int i = y - 1; i >= 0; i--) {
+            if (field.hasTile(x, i)) {
+                return true;
+            }
         }
-        return eventBuilder.nullEvent();
+        return false;
+    }
+
+    /**
+     * Move all tiles above y down
+     *
+     * @param y should be the lowest empty cell in the column
+     */
+    private GameEvent stackTilesInColumn(int x, int y) {
+        GameEventFactory.MultiEventBuilder eventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
+        for (int i = y - 1; i >= 0; i--) {
+            if (field.hasTile(x, i)) {
+                GameEvent event = moveTile(x, i, x, y--);
+                eventBuilder.add(event);
+            }
+        }
+        return eventBuilder.build();
+    }
+
+    /**
+     * Push all tile groups of the same color above y
+     */
+    private GameEvent pushTilesInColumn(int x, int y) {
+        GameEventFactory.MultiEventBuilder eventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
+        int currentColor = field.getTile(x, y).color;
+        while (y < field.ROWS_COUNT - 1 && field.getTile(x, y + 1).color == currentColor) {
+            y++;
+        }
+        List<Cell> currentGroup = new LinkedList<>();
+        for (int i = y; i >= 0; i--) {
+            Tile tile = field.getTile(x, i);
+            if (tile == null || tile.color != currentColor) {
+                if (currentGroup.size() > 1) {
+                    Cell[] cells = new Cell[currentGroup.size()];
+                    GameEvent event = pushTiles(currentGroup.toArray(cells));
+                    eventBuilder.add(event);
+                }
+                if (tile == null) {
+                    break;
+                }
+                currentGroup.clear();
+                currentColor = tile.color;
+            }
+            currentGroup.add(tile.cell);
+        }
+        return eventBuilder.build();
     }
 
     private GameEvent removeTile(int x, int y) {
         field.removeTile(x, y);
-        return eventBuilder.onRemove(new Cell(x, y));
-    }
-
-    private GameEvent setTile(Tile tile) {
-        field.setTile(tile);
-        return eventBuilder.onCreate(tile);
+        return eventFactory.remove(new Cell(x, y));
     }
 
     private GameEvent moveTile(int fromX, int fromY, int toX, int toY) {
         if (fromX == toX && fromY == toY) {
-            return eventBuilder.nullEvent();
+            return null;
         }
         Tile oldTile = field.getTile(fromX, fromY);
         field.removeTile(fromX, fromY);
         Tile newTile = new Tile(toX, toY, oldTile.color);
         field.setTile(newTile);
-        return eventBuilder.onMove(oldTile.cell, newTile.cell);
+        return eventFactory.move(oldTile.cell, newTile.cell);
     }
 
     private GameEvent generateRandomTile() {
@@ -160,12 +225,12 @@ public class Game {
         List<Cell> emptyCells = availableEmptyCells();
         if (emptyCells.isEmpty()) {
             this.gameOver = true;
-            return eventBuilder.nullEvent();
+            return null;
         }
         int column = random.nextInt(emptyCells.size());
         Cell cell = emptyCells.get(column);
-        Tile tile = new Tile(cell.x, cell.y, value);
-        return setTile(tile);
+        Tile tile = new Tile(cell, value);
+        return createTile(tile);
     }
 
     private List<Cell> availableEmptyCells() {
@@ -215,13 +280,13 @@ public class Game {
         return n;
     }
 
-    private int bottomAvailableRow(int x, int y) {
-        for (int i = field.ROWS_COUNT - 1; i > y; i--) {
+    private int lowerAvailableRow(int x) {
+        for (int i = field.ROWS_COUNT - 1; i >= 0; i--) {
             if (field.hasNoTile(x, i)) {
                 return i;
             }
         }
-        return y;
+        return -1;
     }
 
     public GameField getField() {

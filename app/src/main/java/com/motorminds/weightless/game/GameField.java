@@ -9,14 +9,14 @@ public class GameField {
     public final int ROWS_COUNT = 6;
     public final int COLUMNS_COUNT = 4;
 
-    private Integer[][] field;
+    private Tile[][] field;
 
-    public GameField() {
-        this.field = new Integer[ROWS_COUNT][COLUMNS_COUNT];
+    GameField() {
+        this.field = new Tile[ROWS_COUNT][COLUMNS_COUNT];
     }
 
     void setTile(Tile tile) {
-        field[tile.cell.y][tile.cell.x] = tile.color;
+        field[tile.cell.y][tile.cell.x] = tile;
     }
 
     void removeTile(int x, int y) {
@@ -24,20 +24,15 @@ public class GameField {
     }
 
     public Tile getTile(int x, int y) {
-        Integer value = field[y][x];
-        return value == null ? null : new Tile(x, y, value);
+        return field[y][x];
     }
 
     public boolean hasTile(int x, int y) {
-        return field[y][x] != null;
+        return getTile(x, y) != null;
     }
 
     public boolean hasNoTile(int x, int y) {
         return !hasTile(x, y);
-    }
-
-    public boolean isValidPosition(int x, int y) {
-        return y >= 0 && y < ROWS_COUNT && x >= 0 && x < COLUMNS_COUNT;
     }
 
     void dumpField() {
