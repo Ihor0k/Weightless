@@ -14,14 +14,16 @@ public class DropZoneView extends AbstractCellView {
         this.color = color;
     }
 
+    @Override
     public void highlight() {
-        drawable.setColor(color);
-        drawable.setAlpha(127);
+        background.setColor(color);
+        background.setAlpha(127);
         invalidate();
     }
 
+    @Override
     public void unhighlight() {
-        drawable.setAlpha(0);
+        background.setAlpha(0);
         invalidate();
     }
 }

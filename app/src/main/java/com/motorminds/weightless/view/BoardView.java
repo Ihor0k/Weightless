@@ -99,8 +99,9 @@ public class BoardView extends ViewGroup implements GameContract.View {
                 Cell cell = new Cell(x, y);
                 createDropZone(cell);
                 Tile tile = field.getTile(x, y);
-                if (tile == null) continue;
-                createTileView(tile);
+                if (tile != null) {
+                    createTileView(tile);
+                }
             }
         }
 
@@ -116,7 +117,7 @@ public class BoardView extends ViewGroup implements GameContract.View {
     }
 
     private void createTileView(Tile tile) {
-        TileView tileView = new TileView(getContext(), tile.color);
+        TileView tileView = new TileView(getContext(), tile.color, tile.type);
         OnTouchListener onTouchListener = buildOnTouchListener(tile);
         tileView.setOnTouchListener(onTouchListener);
         tileViews.put(tile.cell, tileView);

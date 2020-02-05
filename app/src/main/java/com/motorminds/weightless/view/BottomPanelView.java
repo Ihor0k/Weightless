@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat;
 
 import com.motorminds.weightless.ColorAndView;
 import com.motorminds.weightless.R;
+import com.motorminds.weightless.Tile;
 
 public class BottomPanelView extends ViewGroup {
     private static int MAX_CELLS = 7;
@@ -30,7 +31,7 @@ public class BottomPanelView extends ViewGroup {
     }
 
     private void createTileView(Context context, int color, int index) {
-        TileView tileView = new TileView(context, color);
+        TileView tileView = new TileView(context, color, Tile.Type.SIMPLE);
         addView(tileView);
 
         tileView.setOnTouchListener((v, event) -> {
