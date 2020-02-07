@@ -13,6 +13,7 @@ import java.util.Random;
 
 public class Game {
     private final static int INIT_CELLS_COUNT = 9;
+    private final static float ACTION_TILE_CHANCE = (float) 0.15;
 
     private GameField field;
     private final GameEventFactory eventFactory;
@@ -122,14 +123,14 @@ public class Game {
     }
 
     private GameEvent pushTiles(Cell... cells) {
-        GameEventFactory.MultiEventBuilder eventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
         for (Cell cell : cells) {
             GameEvent event = removeTile(cell.x, cell.y);
-            eventBuilder.add(event);
+            multiEventBuilder.add(event);
         }
         GameEvent event = incrementScore(cells.length);
-        eventBuilder.add(event);
-        return eventBuilder.build();
+        multiEventBuilder.add(event);
+        return multiEventBuilder.build();
     }
 
     private GameEvent incrementScore(int val) {
@@ -165,21 +166,21 @@ public class Game {
      * @param y should be the lowest empty cell in the column
      */
     private GameEvent stackTilesInColumn(int x, int y) {
-        GameEventFactory.MultiEventBuilder eventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
         for (int i = y - 1; i >= 0; i--) {
             if (field.hasTile(x, i)) {
                 GameEvent event = moveTile(x, i, x, y--);
-                eventBuilder.add(event);
+                multiEventBuilder.add(event);
             }
         }
-        return eventBuilder.build();
+        return multiEventBuilder.build();
     }
 
     /**
      * Push all tile groups of the same color above y
      */
     private GameEvent pushTilesInColumn(int x, int y) {
-        GameEventFactory.MultiEventBuilder eventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
         int currentColor = field.getTile(x, y).color;
         while (y < field.ROWS_COUNT - 1 && field.getTile(x, y + 1).color == currentColor) {
             y++;
@@ -191,7 +192,7 @@ public class Game {
                 if (currentGroup.size() > 1) {
                     Cell[] cells = new Cell[currentGroup.size()];
                     GameEvent event = pushTiles(currentGroup.toArray(cells));
-                    eventBuilder.add(event);
+                    multiEventBuilder.add(event);
                 }
                 if (tile == null) {
                     break;
@@ -201,7 +202,7 @@ public class Game {
             }
             currentGroup.add(tile.cell);
         }
-        return eventBuilder.build();
+        return multiEventBuilder.build();
     }
 
     private GameEvent removeTile(int x, int y) {
@@ -229,7 +230,13 @@ public class Game {
         }
         int column = random.nextInt(emptyCells.size());
         Cell cell = emptyCells.get(column);
-        Tile tile = new Tile(cell, value);
+        Tile.Type tileType;
+        if (random.nextFloat() < ACTION_TILE_CHANCE) {
+            tileType = Tile.Type.randomActionType();
+        } else {
+            tileType = Tile.Type.SIMPLE;
+        }
+        Tile tile = new Tile(cell, value, tileType);
         return createTile(tile);
     }
 

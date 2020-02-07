@@ -1,5 +1,7 @@
 package com.motorminds.weightless;
 
+import java.util.Random;
+
 public class Tile {
     public final Cell cell;
     public final int color;
@@ -32,6 +34,25 @@ public class Tile {
         VERTICAL,
         HORIZONTAL,
         VERTICAL_HORIZONTAL,
-        BOMB
+        BOMB;
+
+        private static final Type[] actionValues;
+        private static final Random random;
+
+        static {
+            Type[] values = values();
+            actionValues = new Type[values.length - 1];
+            int i = 0;
+            for (Type value : values) {
+                if (value != SIMPLE) {
+                    actionValues[i++] = value;
+                }
+            }
+            random = new Random();
+        }
+
+        public static Type randomActionType() {
+            return actionValues[random.nextInt(actionValues.length)];
+        }
     }
 }
