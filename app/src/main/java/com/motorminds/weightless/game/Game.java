@@ -1,89 +1,70 @@
 package com.motorminds.weightless.game;
 
 import com.motorminds.weightless.Cell;
+import com.motorminds.weightless.GameEventChain;
 import com.motorminds.weightless.Tile;
 import com.motorminds.weightless.events.GameEvent;
 import com.motorminds.weightless.events.GameEventFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 
 public class Game {
-    private final static int INIT_CELLS_COUNT = 9;
-    private final static float ACTION_TILE_CHANCE = (float) 0.15;
-
-    private GameField field;
     private final GameEventFactory eventFactory;
-    private final ColorGenerator colorGenerator;
-    private final Random random;
-
+    private final TileGenerator tileGenerator;
+    private GameField field;
     private int score;
     private int currentMoveScore;
     private int currentMoveCombo;
-    private GameEventFactory.GameEventBuilder eventBuilder;
-    private boolean gameOver;
+    private GameEventChain eventChain;
 
-    public Game(GameEventFactory eventFactory, ColorGenerator colorGenerator) {
-        this(eventFactory, colorGenerator, null, 0);
+    public Game(GameEventFactory eventFactory, TileGenerator tileGenerator, GameField field) {
+        this(eventFactory, tileGenerator, field, 0);
     }
 
-    public Game(GameEventFactory eventFactory, ColorGenerator colorGenerator, GameField field, int score) {
+    public Game(GameEventFactory eventFactory, TileGenerator tileGenerator, GameField field, int score) {
         this.eventFactory = eventFactory;
-        this.colorGenerator = colorGenerator;
-        this.random = new Random();
-        if (field != null) {
-            this.field = field;
-        } else {
-            initField();
-        }
+        this.tileGenerator = tileGenerator;
+        this.field = field;
         this.score = score;
         this.currentMoveScore = 0;
         this.currentMoveCombo = 1;
-        this.gameOver = false;
     }
 
-    private void initField() {
-        this.field = new GameField();
-        for (int i = 0; i < INIT_CELLS_COUNT; i++) {
-            generateRandomTile();
-        }
-    }
-
-    public GameEvent moveTile(Cell cell, int toColumn) {
+    public GameEventChain moveTile(Cell cell, int toColumn) {
         int fromX = cell.x;
         int y = cell.y;
         int toX = wantToMove(cell, toColumn);
-        if (fromX == toX) {
+        if (fromX == toX || isGameOver()) {
             return null;
         }
+        this.currentMoveScore = 0;
+        this.currentMoveCombo = 1;
         GameEvent event;
         if (field.hasTile(toX, y)) {
             int realToX = toX < fromX ? toX + 1 : toX - 1;
             GameEvent moveEvent = moveTile(fromX, y, realToX, y);
-            this.eventBuilder = eventFactory.builder(moveEvent);
+            this.eventChain = new GameEventChain(moveEvent);
             GameEvent checkFromEvent = checkColumn(fromX);
-            GameEvent pushEvent = pushTiles(new Cell(realToX, y), new Cell(toX, y));
-            GameEvent pushAndCheckFrom = eventBuilder.playTogether(pushEvent, checkFromEvent);
+            GameEvent pushEvent = pushTiles(field.getTile(realToX, y), field.getTile(toX, y));
+            GameEvent pushAndCheckFrom = eventChain.playTogether(pushEvent, checkFromEvent);
             GameEvent checkToEvent = checkColumn(toX);
-            event = eventBuilder.playSequentially(moveEvent, pushAndCheckFrom, checkToEvent);
+            event = eventChain.playSequentially(moveEvent, pushAndCheckFrom, checkToEvent);
         } else {
             GameEvent moveEvent = moveTile(fromX, y, toX, y);
-            this.eventBuilder = eventFactory.builder(moveEvent);
+            this.eventChain = new GameEventChain(moveEvent);
             GameEvent checkFromEvent = checkColumn(fromX);
             GameEvent checkToEvent = checkColumn(toX);
-            GameEvent checkFromEvents = eventBuilder.playTogether(checkFromEvent, checkToEvent);
-            event = eventBuilder.playSequentially(moveEvent, checkFromEvents);
+            GameEvent checkFromEvents = eventChain.playTogether(checkFromEvent, checkToEvent);
+            event = eventChain.playSequentially(moveEvent, checkFromEvents);
         }
-        GameEvent generateTileEvent = generateRandomTile();
-        eventBuilder.append(event, generateTileEvent);
+        Tile tile = tileGenerator.generate();
+        if (tile != null) {
+            GameEvent createTileEvent = createTile(tile);
+            eventChain.append(event, createTileEvent);
+        }
         this.score += currentMoveScore;
-        this.currentMoveScore = 0;
-        this.currentMoveCombo = 1;
-        field.dumpField();
-        return eventBuilder.build();
+        return eventChain;
     }
 
     /**
@@ -122,15 +103,15 @@ public class Game {
         return eventFactory.create(tile);
     }
 
-    private GameEvent pushTiles(Cell... cells) {
-        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
-        for (Cell cell : cells) {
-            GameEvent event = removeTile(cell.x, cell.y);
+    private GameEvent pushTiles(Tile... tiles) {
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventChain);
+        for (Tile tile : tiles) {
+            GameEvent event = removeTile(tile.cell.x, tile.cell.y);
             multiEventBuilder.add(event);
         }
-        GameEvent event = incrementScore(cells.length);
+        GameEvent event = incrementScore(tiles.length);
         multiEventBuilder.add(event);
-        return multiEventBuilder.build();
+        return multiEventBuilder.playTogether();
     }
 
     private GameEvent incrementScore(int val) {
@@ -148,7 +129,7 @@ public class Game {
         GameEvent stackEvent = stackTilesInColumn(x, lowerY);
         GameEvent pushEvent = pushTilesInColumn(x, lowerY);
         GameEvent subEvent = checkColumn(x);
-        return eventBuilder.playSequentially(stackEvent, pushEvent, subEvent);
+        return eventChain.playSequentially(stackEvent, pushEvent, subEvent);
     }
 
     private boolean hasTilesAbove(int x, int y) {
@@ -166,31 +147,31 @@ public class Game {
      * @param y should be the lowest empty cell in the column
      */
     private GameEvent stackTilesInColumn(int x, int y) {
-        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventChain);
         for (int i = y - 1; i >= 0; i--) {
             if (field.hasTile(x, i)) {
                 GameEvent event = moveTile(x, i, x, y--);
                 multiEventBuilder.add(event);
             }
         }
-        return multiEventBuilder.build();
+        return multiEventBuilder.playTogether();
     }
 
     /**
      * Push all tile groups of the same color above y
      */
     private GameEvent pushTilesInColumn(int x, int y) {
-        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventBuilder);
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventChain);
         int currentColor = field.getTile(x, y).color;
         while (y < field.ROWS_COUNT - 1 && field.getTile(x, y + 1).color == currentColor) {
             y++;
         }
-        List<Cell> currentGroup = new LinkedList<>();
+        List<Tile> currentGroup = new LinkedList<>();
         for (int i = y; i >= 0; i--) {
             Tile tile = field.getTile(x, i);
             if (tile == null || tile.color != currentColor) {
                 if (currentGroup.size() > 1) {
-                    Cell[] cells = new Cell[currentGroup.size()];
+                    Tile[] cells = new Tile[currentGroup.size()];
                     GameEvent event = pushTiles(currentGroup.toArray(cells));
                     multiEventBuilder.add(event);
                 }
@@ -200,9 +181,9 @@ public class Game {
                 currentGroup.clear();
                 currentColor = tile.color;
             }
-            currentGroup.add(tile.cell);
+            currentGroup.add(tile);
         }
-        return multiEventBuilder.build();
+        return multiEventBuilder.playTogether();
     }
 
     private GameEvent removeTile(int x, int y) {
@@ -219,72 +200,6 @@ public class Game {
         Tile newTile = new Tile(toX, toY, oldTile.color);
         field.setTile(newTile);
         return eventFactory.move(oldTile.cell, newTile.cell);
-    }
-
-    private GameEvent generateRandomTile() {
-        int value = colorGenerator.nextColor();
-        List<Cell> emptyCells = availableEmptyCells();
-        if (emptyCells.isEmpty()) {
-            this.gameOver = true;
-            return null;
-        }
-        int column = random.nextInt(emptyCells.size());
-        Cell cell = emptyCells.get(column);
-        Tile.Type tileType;
-        if (random.nextFloat() < ACTION_TILE_CHANCE) {
-            tileType = Tile.Type.randomActionType();
-        } else {
-            tileType = Tile.Type.SIMPLE;
-        }
-        Tile tile = new Tile(cell, value, tileType);
-        return createTile(tile);
-    }
-
-    private List<Cell> availableEmptyCells() {
-        List<Integer> emptyCellsInColumn = new ArrayList<>(field.COLUMNS_COUNT);
-        for (int i = 0; i < field.COLUMNS_COUNT; i++) {
-            int emptyCells = emptyCellsInColumn(i);
-            emptyCellsInColumn.add(emptyCells);
-        }
-        /*
-        Avoid this situation:
-        | 0 0 0 0 |
-        | 0 0 0 0 |
-        | 0 0 0 0 |
-        | x x x x |
-        | x x x x |
-         */
-        List<Cell> result = new ArrayList<>(field.COLUMNS_COUNT);
-        int max = Collections.max(emptyCellsInColumn);
-        int min = Collections.min(emptyCellsInColumn);
-        int countOfMax = Collections.frequency(emptyCellsInColumn, max);
-        if (max - min == 1 && countOfMax == 1) {
-            for (int i = 0; i < emptyCellsInColumn.size(); i++) {
-                int value = emptyCellsInColumn.get(i);
-                if (value != max && value > 0) {
-                    result.add(new Cell(i, value - 1));
-                }
-            }
-        } else {
-            for (int i = 0; i < emptyCellsInColumn.size(); i++) {
-                int value = emptyCellsInColumn.get(i);
-                if (value > 0) {
-                    result.add(new Cell(i, value - 1));
-                }
-            }
-        }
-        return result;
-    }
-
-    private int emptyCellsInColumn(int column) {
-        int n = 0;
-        for (int i = 0; i < field.ROWS_COUNT; i++) {
-            if (field.hasTile(column, i)) {
-                break;
-            }
-            n++;
-        }
-        return n;
     }
 
     private int lowerAvailableRow(int x) {
@@ -305,6 +220,11 @@ public class Game {
     }
 
     public boolean isGameOver() {
-        return gameOver;
+        for (int i = 0; i < field.COLUMNS_COUNT; i++) {
+            if (field.hasNoTile(i, 0)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

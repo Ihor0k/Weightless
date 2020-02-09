@@ -11,7 +11,7 @@ public class GameField {
 
     private Tile[][] field;
 
-    GameField() {
+    public GameField() {
         this.field = new Tile[ROWS_COUNT][COLUMNS_COUNT];
     }
 

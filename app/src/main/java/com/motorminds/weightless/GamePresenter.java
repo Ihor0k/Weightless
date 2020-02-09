@@ -7,11 +7,13 @@ import android.content.SharedPreferences;
 import android.util.Base64;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import com.motorminds.weightless.events.GameEvent;
 import com.motorminds.weightless.events.GameEventFactory;
-import com.motorminds.weightless.game.ColorGenerator;
 import com.motorminds.weightless.game.Game;
 import com.motorminds.weightless.game.GameField;
+import com.motorminds.weightless.game.TileGeneratorImpl;
 import com.motorminds.weightless.view.GameOverPopup;
 
 import java.io.ByteArrayInputStream;
@@ -25,14 +27,20 @@ public class GamePresenter implements GameContract.Presenter {
     private Game game;
     private GameContract.View view;
     private GameEventFactory eventFactory;
-    private ColorGenerator colorGenerator;
+    private int[] colorPalette;
     private GameOverPopup gameOverPopup;
     private SharedPreferences preferences;
 
     public GamePresenter(Context context, GameContract.View view, TextView scoreView, GameOverPopup gameOverPopup, SharedPreferences preferences) {
         this.preferences = preferences;
         this.eventFactory = new GameEventFactory(view, scoreView);
-        this.colorGenerator = new ColorGeneratorImpl(context);
+        int[] colorPalette = new int[]{
+                ContextCompat.getColor(context, R.color.cellYellow),
+                ContextCompat.getColor(context, R.color.cellRed),
+                ContextCompat.getColor(context, R.color.cellGreen),
+                ContextCompat.getColor(context, R.color.cellWhite)
+        };
+        this.colorPalette = colorPalette;
         this.game = deserializeGame(preferences);
         this.view = view;
         this.scoreView = scoreView;
@@ -50,8 +58,10 @@ public class GamePresenter implements GameContract.Presenter {
 
     @Override
     public void moveTile(Cell from, Cell to) {
-        GameEvent event = game.moveTile(from, to.x);
-        animateEvent(event);
+        GameEventChain eventChain = game.moveTile(from, to.x);
+        if (eventChain != null) {
+            animate(eventChain.getAnimator());
+        }
         if (game.isGameOver()) {
             gameOverPopup.show(game.getScore());
         }
@@ -71,7 +81,9 @@ public class GamePresenter implements GameContract.Presenter {
     @Override
     public void createTile(Tile tile) {
         GameEvent event = game.createTile(tile);
-        animateEvent(event);
+        if (event != null) {
+            animate(event.getAnimator());
+        }
     }
 
     @Override
@@ -93,14 +105,12 @@ public class GamePresenter implements GameContract.Presenter {
     @Override
     public void restart() {
         gameOverPopup.hide();
-        this.game = new Game(this.eventFactory, this.colorGenerator);
+        this.game = newGame();
         this.preferences.edit().clear().apply();
         initView();
     }
 
-    private void animateEvent(GameEvent event) {
-        if (event == null) return;
-        Animator animator = event.getAnimator();
+    private void animate(Animator animator) {
         animator.setDuration(150);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -129,13 +139,21 @@ public class GamePresenter implements GameContract.Presenter {
             try (ObjectInputStream ois = new ObjectInputStream(bais)) {
                 GameField field = (GameField) ois.readObject();
                 int score = preferences.getInt("score", 0);
-                return new Game(eventFactory, colorGenerator, field, score);
+                TileGeneratorImpl tileGenerator = new TileGeneratorImpl(field, colorPalette);
+                return new Game(eventFactory, tileGenerator, field, score);
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
-                return new Game(eventFactory, colorGenerator);
+                return newGame();
             }
         } else {
-            return new Game(eventFactory, colorGenerator);
+            return newGame();
         }
+    }
+
+    private Game newGame() {
+        GameField field = new GameField();
+        TileGeneratorImpl tileGenerator = new TileGeneratorImpl(field, colorPalette);
+        tileGenerator.initField();
+        return new Game(eventFactory, tileGenerator, field);
     }
 }
