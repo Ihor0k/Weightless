@@ -43,12 +43,13 @@ public class GameEventChain {
         Node parentNode = registerEvent(events[0]);
         for (int i = 1; i < events.length; i++) {
             Node node = registerEvent(events[i]);
-            if (parentNode.childNode == null) {
+            if (isEmptyNode(parentNode.childNode)) {
                 parentNode.childNode = node;
+                parentNode = node;
             } else {
                 merge(parentNode.childNode, node);
+                parentNode = parentNode.childNode;
             }
-            parentNode = node;
         }
         return firstNonNull(events);
     }
@@ -68,7 +69,7 @@ public class GameEventChain {
     }
 
     private void append(Node node, GameEvent event) {
-        if (node.childNode == null) {
+        if (isEmptyNode(node.childNode)) {
             node.childNode = registerEvent(event);
         } else {
             append(node.childNode, event);
@@ -93,11 +94,15 @@ public class GameEventChain {
         for (GameEvent event : subNode.events) {
             eventNodeMap.put(event, mainNode);
         }
-        if (mainNode.childNode == null) {
+        if (isEmptyNode(mainNode.childNode)) {
             mainNode.childNode = subNode.childNode;
         } else if (subNode.childNode != null) {
             merge(mainNode.childNode, subNode.childNode);
         }
+    }
+
+    private boolean isEmptyNode(Node node) {
+        return node == null || node.events.isEmpty() && isEmptyNode(node.childNode);
     }
 
     public Animator getAnimator() {
@@ -134,6 +139,18 @@ public class GameEventChain {
     @Override
     public int hashCode() {
         return rootNode.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        Node node = rootNode;
+        int i = 1;
+        StringBuilder sb = new StringBuilder();
+        while (node != null) {
+            sb.append(i++).append(": ").append(node.events).append("\n");
+            node = node.childNode;
+        }
+        return sb.toString();
     }
 
     private static class Node {

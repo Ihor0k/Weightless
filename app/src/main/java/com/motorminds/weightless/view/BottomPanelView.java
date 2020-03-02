@@ -8,9 +8,9 @@ import android.view.ViewGroup;
 
 import androidx.core.content.ContextCompat;
 
-import com.motorminds.weightless.ColorAndView;
 import com.motorminds.weightless.R;
 import com.motorminds.weightless.Tile;
+import com.motorminds.weightless.TileInfoAndView;
 
 public class BottomPanelView extends ViewGroup {
     private static int MAX_CELLS = 7;
@@ -21,24 +21,24 @@ public class BottomPanelView extends ViewGroup {
     }
 
     private void initTileView(Context context) {
-        createTileView(context, ContextCompat.getColor(context, R.color.cellYellow), 0);
-        createTileView(context, ContextCompat.getColor(context, R.color.cellRed), 1);
-        createTileView(context, ContextCompat.getColor(context, R.color.cellWhite), 2);
-        createTileView(context, ContextCompat.getColor(context, R.color.cellWhite), 3);
-        createTileView(context, ContextCompat.getColor(context, R.color.cellYellow), 4);
-        createTileView(context, ContextCompat.getColor(context, R.color.cellRed), 5);
-        createTileView(context, ContextCompat.getColor(context, R.color.cellGreen), 6);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellYellow), Tile.Type.SIMPLE, 0);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellRed), Tile.Type.SIMPLE, 1);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellWhite), Tile.Type.SIMPLE, 2);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellWhite), Tile.Type.SIMPLE, 3);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellYellow), Tile.Type.SIMPLE, 4);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellRed), Tile.Type.SIMPLE, 5);
+        createTileView(context, ContextCompat.getColor(context, R.color.cellGreen), Tile.Type.SIMPLE, 6);
     }
 
-    private void createTileView(Context context, int color, int index) {
-        TileView tileView = new TileView(context, color, Tile.Type.SIMPLE);
+    private void createTileView(Context context, int color, Tile.Type type, int index) {
+        TileView tileView = new TileView(context, color, type);
         addView(tileView);
 
         tileView.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN: {
-                    ColorAndView colorAndView = new ColorAndView(color, (TileView) v);
-                    return v.startDrag(null, new InvisibleDragShadowBuilder(), colorAndView, 0);
+                    TileInfoAndView tileInfoAndView = new TileInfoAndView(color, type, (TileView) v);
+                    return v.startDrag(null, new InvisibleDragShadowBuilder(), tileInfoAndView, 0);
                 }
             }
             return false;

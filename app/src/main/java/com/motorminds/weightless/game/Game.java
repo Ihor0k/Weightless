@@ -48,8 +48,7 @@ public class Game {
             GameEvent checkFromEvent = checkColumn(fromX);
             GameEvent pushEvent = pushTiles(field.getTile(realToX, y), field.getTile(toX, y));
             GameEvent pushAndCheckFrom = eventChain.playTogether(pushEvent, checkFromEvent);
-            GameEvent checkToEvent = checkColumn(toX);
-            event = eventChain.playSequentially(moveEvent, pushAndCheckFrom, checkToEvent);
+            event = eventChain.playSequentially(moveEvent, pushAndCheckFrom);
         } else {
             GameEvent moveEvent = moveTile(fromX, y, toX, y);
             this.eventChain = new GameEventChain(moveEvent);
@@ -104,14 +103,118 @@ public class Game {
     }
 
     private GameEvent pushTiles(Tile... tiles) {
-        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventChain);
+        GameEventFactory.MultiEventBuilder removeEventBuilder = eventFactory.multiEventBuilder(eventChain);
         for (Tile tile : tiles) {
-            GameEvent event = removeTile(tile.cell.x, tile.cell.y);
-            multiEventBuilder.add(event);
+            GameEvent event = removeTile(tile.cell);
+            removeEventBuilder.add(event);
         }
-        GameEvent event = incrementScore(tiles.length);
-        multiEventBuilder.add(event);
-        return multiEventBuilder.playTogether();
+        GameEvent scoreEvent = incrementScore(tiles.length);
+        GameEventFactory.MultiEventBuilder actionEventBuilder = eventFactory.multiEventBuilder(eventChain);
+        for (Tile tile : tiles) {
+            GameEvent event = checkActionTile(tile);
+            actionEventBuilder.add(event);
+        }
+        GameEventFactory.MultiEventBuilder checkEventBuilder = eventFactory.multiEventBuilder(eventChain);
+        for (Tile tile : tiles) {
+            GameEvent event = checkColumn(tile.cell.x);
+            checkEventBuilder.add(event);
+        }
+        GameEvent removeEvent = removeEventBuilder.playTogether();
+        GameEvent removeAndScoreEvent = eventChain.playTogether(removeEvent, scoreEvent);
+        GameEvent actionEvent = actionEventBuilder.playTogether();
+        GameEvent checkEvent = checkEventBuilder.playTogether();
+        return eventChain.playSequentially(removeAndScoreEvent, actionEvent, checkEvent);
+    }
+
+    private GameEvent checkActionTile(Tile tile) {
+        switch (tile.type) {
+            case SIMPLE:
+                return null;
+            case VERTICAL:
+                return pushVertical(tile.cell);
+            case HORIZONTAL:
+                return pushHorizontal(tile.cell);
+            case VERTICAL_HORIZONTAL:
+                return pushVerticalHorizontal(tile.cell);
+            case BOMB:
+                return pushBomb(tile.cell);
+        }
+        return null;
+    }
+
+    private GameEvent pushVertical(Cell cell) {
+        int x = cell.x;
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(eventChain);
+        int topY = cell.y - 1;
+        int bottomY = cell.y + 1;
+        while (topY >= 0 || bottomY < field.ROWS_COUNT) {
+            Tile topTile = topY >= 0 ? field.getTile(x, topY) : null;
+            Tile bottomTile = bottomY < field.ROWS_COUNT ? field.getTile(x, bottomY) : null;
+            GameEvent topEvent = removeAndCheckTile(topTile);
+            GameEvent bottomEvent = removeAndCheckTile(bottomTile);
+            GameEvent event = eventChain.playTogether(topEvent, bottomEvent);
+            multiEventBuilder.add(event);
+            topY--;
+            bottomY++;
+        }
+        return multiEventBuilder.playSequentially();
+    }
+
+    private GameEvent pushHorizontal(Cell cell) {
+        int y = cell.y;
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(eventChain);
+        int leftX = cell.x - 1;
+        int rightX = cell.x + 1;
+        while (leftX >= 0 || rightX < field.COLUMNS_COUNT) {
+            Tile leftTile = leftX >= 0 ? field.getTile(leftX, y) : null;
+            Tile rightTile = rightX < field.COLUMNS_COUNT ? field.getTile(rightX, y) : null;
+            GameEvent leftEvent = removeAndCheckTile(leftTile);
+            GameEvent rightEvent = removeAndCheckTile(rightTile);
+            GameEvent event = eventChain.playTogether(leftEvent, rightEvent);
+            multiEventBuilder.add(event);
+            leftX--;
+            rightX++;
+        }
+        return multiEventBuilder.playSequentially();
+    }
+
+    private GameEvent pushVerticalHorizontal(Cell cell) {
+        GameEvent verticalEvent = pushVertical(cell);
+        GameEvent horizontalEvent = pushHorizontal(cell);
+        return eventChain.playTogether(verticalEvent, horizontalEvent);
+    }
+
+    private GameEvent pushBomb(Cell cell) {
+        boolean hasLeft = cell.x - 1 >= 0;
+        boolean hasRight = cell.x + 1 < field.COLUMNS_COUNT;
+        boolean hasTop = cell.y - 1 > 0;
+        boolean hasBottom = cell.y + 1 < field.ROWS_COUNT;
+        GameEventFactory.MultiEventBuilder eventBuilder = eventFactory.multiEventBuilder(eventChain);
+        if (hasLeft) {
+            if (hasTop) {
+                eventBuilder.add(removeAndCheckTile(field.getTile(cell.x - 1, cell.y - 1)));
+            }
+            eventBuilder.add(removeAndCheckTile(field.getTile(cell.x - 1, cell.y)));
+            if (hasBottom) {
+                eventBuilder.add(removeAndCheckTile(field.getTile(cell.x - 1, cell.y + 1)));
+            }
+        }
+        if (hasRight) {
+            if (hasTop) {
+                eventBuilder.add(removeAndCheckTile(field.getTile(cell.x + 1, cell.y - 1)));
+            }
+            eventBuilder.add(removeAndCheckTile(field.getTile(cell.x + 1, cell.y)));
+            if (hasBottom) {
+                eventBuilder.add(removeAndCheckTile(field.getTile(cell.x + 1, cell.y + 1)));
+            }
+        }
+        if (hasTop) {
+            eventBuilder.add(removeAndCheckTile(field.getTile(cell.x, cell.y - 1)));
+        }
+        if (hasBottom) {
+            eventBuilder.add(removeAndCheckTile(field.getTile(cell.x, cell.y + 1)));
+        }
+        return eventBuilder.playTogether();
     }
 
     private GameEvent incrementScore(int val) {
@@ -128,8 +231,7 @@ public class Game {
         }
         GameEvent stackEvent = stackTilesInColumn(x, lowerY);
         GameEvent pushEvent = pushTilesInColumn(x, lowerY);
-        GameEvent subEvent = checkColumn(x);
-        return eventChain.playSequentially(stackEvent, pushEvent, subEvent);
+        return eventChain.playSequentially(stackEvent, pushEvent);
     }
 
     private boolean hasTilesAbove(int x, int y) {
@@ -147,7 +249,7 @@ public class Game {
      * @param y should be the lowest empty cell in the column
      */
     private GameEvent stackTilesInColumn(int x, int y) {
-        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventChain);
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(eventChain);
         for (int i = y - 1; i >= 0; i--) {
             if (field.hasTile(x, i)) {
                 GameEvent event = moveTile(x, i, x, y--);
@@ -161,7 +263,7 @@ public class Game {
      * Push all tile groups of the same color above y
      */
     private GameEvent pushTilesInColumn(int x, int y) {
-        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(this.eventChain);
+        GameEventFactory.MultiEventBuilder multiEventBuilder = eventFactory.multiEventBuilder(eventChain);
         int currentColor = field.getTile(x, y).color;
         while (y < field.ROWS_COUNT - 1 && field.getTile(x, y + 1).color == currentColor) {
             y++;
@@ -186,9 +288,19 @@ public class Game {
         return multiEventBuilder.playTogether();
     }
 
-    private GameEvent removeTile(int x, int y) {
-        field.removeTile(x, y);
-        return eventFactory.remove(new Cell(x, y));
+    private GameEvent removeAndCheckTile(Tile tile) {
+        if (tile == null) {
+            return null;
+        }
+        GameEvent removeEvent = removeTile(tile.cell);
+        GameEvent actionEvent = checkActionTile(tile);
+        GameEvent checkColumnEvent = checkColumn(tile.cell.x);
+        return eventChain.playSequentially(removeEvent, actionEvent, checkColumnEvent);
+    }
+
+    private GameEvent removeTile(Cell cell) {
+        field.removeTile(cell.x, cell.y);
+        return eventFactory.remove(cell);
     }
 
     private GameEvent moveTile(int fromX, int fromY, int toX, int toY) {
@@ -197,7 +309,7 @@ public class Game {
         }
         Tile oldTile = field.getTile(fromX, fromY);
         field.removeTile(fromX, fromY);
-        Tile newTile = new Tile(toX, toY, oldTile.color);
+        Tile newTile = new Tile(toX, toY, oldTile.color, oldTile.type);
         field.setTile(newTile);
         return eventFactory.move(oldTile.cell, newTile.cell);
     }

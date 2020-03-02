@@ -14,7 +14,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -49,7 +48,7 @@ public class GameUnitTest {
 
     @Test
     public void move() {
-        Tile tile = new Tile(0, 5, COLOR_1);
+        Tile tile = makeTile(0, 5, COLOR_1);
         field.setTile(tile);
 
         game.moveTile(tile.cell, 3);
@@ -259,8 +258,85 @@ public class GameUnitTest {
         assertEquals(tile2.color, field.getTile(3, 5).color);
     }
 
+    @Test
+    public void pushSimpleToHorizontal() {
+        Tile tile1 = makeTile(0, 5, COLOR_1);
+        Tile tile2 = makeTile(2, 5, COLOR_1, Tile.Type.HORIZONTAL);
+        Tile tile3 = makeTile(3, 5, COLOR_2);
+
+        game.moveTile(tile1.cell, 2);
+
+        assertTrue(field.hasNoTile(3, 5));
+    }
+
+    @Test
+    public void pushHorizontalToSimple() {
+        Tile tile1 = makeTile(0, 5, COLOR_1);
+        Tile tile2 = makeTile(2, 5, COLOR_1, Tile.Type.HORIZONTAL);
+        Tile tile3 = makeTile(3, 5, COLOR_2);
+
+        game.moveTile(tile2.cell, 0);
+
+        assertTrue(field.hasNoTile(3, 5));
+    }
+
+    @Test
+    public void pushVertical() {
+        Tile tile1 = makeTile(0, 4, COLOR_1);
+        Tile tile2 = makeTile(0, 5, COLOR_1);
+
+        Tile tile3 = makeTile(3, 3, COLOR_3);
+        Tile tile4 = makeTile(3, 4, COLOR_1, Tile.Type.VERTICAL);
+        Tile tile5 = makeTile(3, 5, COLOR_2);
+
+        game.moveTile(tile1.cell, 3);
+
+        assertTrue(field.hasNoTile(3, 3));
+        assertTrue(field.hasNoTile(3, 4));
+        assertTrue(field.hasNoTile(3, 5));
+    }
+
+    @Test
+    public void pushBomb() {
+        Tile tile1 = makeTile(0, 4, COLOR_1);
+        Tile tile2 = makeTile(0, 5, COLOR_1);
+
+        Tile tile3 = makeTile(1, 5, COLOR_1);
+
+        Tile tile4 = makeTile(2, 3, COLOR_3);
+        Tile tile5 = makeTile(2, 4, COLOR_1, Tile.Type.BOMB);
+        Tile tile6 = makeTile(2, 5, COLOR_2);
+
+        Tile tile7 = makeTile(3, 3, COLOR_1);
+        Tile tile8 = makeTile(3, 4, COLOR_2);
+        Tile tile9 = makeTile(3, 5, COLOR_3);
+
+        game.moveTile(tile1.cell, 2);
+
+        assertTrue(field.hasNoTile(1, 5));
+        assertTrue(field.hasNoTile(2, 5));
+        assertTrue(field.hasNoTile(3, 5));
+    }
+
+    @Test
+    public void actionCausesAnotherAction() {
+        Tile tile1 = makeTile(0, 4, COLOR_1);
+        Tile tile2 = makeTile(0, 5, COLOR_1);
+
+        Tile tile3 = makeTile(3, 4, COLOR_1, Tile.Type.VERTICAL);
+        Tile tile4 = makeTile(3, 5, COLOR_2, Tile.Type.HORIZONTAL);
+
+        game.moveTile(tile1.cell, 3);
+
+        assertTrue(field.hasNoTile(0, 5));
+    }
+
     private Tile makeTile(int x, int y, int color) {
-        Tile tile = new Tile(x, y, color);
+        return makeTile(x, y, color, Tile.Type.SIMPLE);
+    }
+
+    private Tile makeTile(int x, int y, int color, Tile.Type type) {
+        Tile tile = new Tile(x, y, color, type);
         field.setTile(tile);
         return tile;
     }

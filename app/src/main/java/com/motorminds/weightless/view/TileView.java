@@ -12,11 +12,13 @@ import com.motorminds.weightless.Tile;
 
 public class TileView extends AbstractCellView {
     private final int color;
+    private final Tile.Type type;
     private final int highlightColor;
 
     public TileView(Context context, int color, Tile.Type type) {
         super(context);
         this.color = color;
+        this.type = type;
         int strokeWidth = getResources().getDimensionPixelSize(R.dimen.cell_highlight_width);
         background.setStroke(strokeWidth, color);
         background.setColor(color);
@@ -49,6 +51,10 @@ public class TileView extends AbstractCellView {
 
     public int getColor() {
         return color;
+    }
+
+    public Tile.Type getType() {
+        return type;
     }
 
     @Override

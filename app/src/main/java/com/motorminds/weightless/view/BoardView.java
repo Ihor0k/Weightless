@@ -11,7 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.motorminds.weightless.Cell;
-import com.motorminds.weightless.ColorAndView;
+import com.motorminds.weightless.TileInfoAndView;
 import com.motorminds.weightless.GameContract;
 import com.motorminds.weightless.Tile;
 import com.motorminds.weightless.TileAndView;
@@ -137,7 +137,8 @@ public class BoardView extends ViewGroup implements GameContract.View {
         TileView tileView = tileViews.remove(from);
         tileViews.put(to, tileView);
         int color = tileView.getColor();
-        Tile tile = new Tile(to, color);
+        Tile.Type type = tileView.getType();
+        Tile tile = new Tile(to, color, type);
         OnTouchListener onTouchListener = buildOnTouchListener(tile);
         tileView.setOnTouchListener(onTouchListener);
         ObjectAnimator animator = new ObjectAnimator();
@@ -234,8 +235,8 @@ public class BoardView extends ViewGroup implements GameContract.View {
                     Highlightable view = null;
                     if (localState instanceof TileAndView) {
                         view = ((TileAndView) localState).view;
-                    } else if (localState instanceof ColorAndView) {
-                        view = ((ColorAndView) localState).view;
+                    } else if (localState instanceof TileInfoAndView) {
+                        view = ((TileInfoAndView) localState).view;
                     }
                     if (view != null) {
                         view.highlight();
@@ -249,10 +250,10 @@ public class BoardView extends ViewGroup implements GameContract.View {
                         TileAndView tileAndView = (TileAndView) localState;
                         Cell toCell = presenter.wantToMove(tileAndView.tile.cell, x);
                         highlight(toCell, tileAndView.tile.color);
-                    } else if (localState instanceof ColorAndView) {
-                        ColorAndView colorAndView = (ColorAndView) localState;
+                    } else if (localState instanceof TileInfoAndView) {
+                        TileInfoAndView tileInfoAndView = (TileInfoAndView) localState;
                         Cell cell = presenter.wantToCreate(x);
-                        highlight(cell, colorAndView.color);
+                        highlight(cell, tileInfoAndView.color);
                     }
                     break;
                 }
@@ -266,12 +267,12 @@ public class BoardView extends ViewGroup implements GameContract.View {
                         if (toCell != null) {
                             presenter.moveTile(tileAndView.tile.cell, toCell);
                         }
-                    } else if (localState instanceof ColorAndView) {
-                        ColorAndView colorAndView = (ColorAndView) localState;
-                        colorAndView.view.unhighlight();
+                    } else if (localState instanceof TileInfoAndView) {
+                        TileInfoAndView tileInfoAndView = (TileInfoAndView) localState;
+                        tileInfoAndView.view.unhighlight();
                         Cell cell = presenter.wantToCreate(x);
                         if (cell != null) {
-                            Tile tile = new Tile(cell, colorAndView.color);
+                            Tile tile = new Tile(cell, tileInfoAndView.color, tileInfoAndView.type);
                             presenter.createTile(tile);
                         }
                     }
@@ -286,9 +287,9 @@ public class BoardView extends ViewGroup implements GameContract.View {
                     if (localState instanceof TileAndView) {
                         TileAndView tileAndView = (TileAndView) localState;
                         tileAndView.view.unhighlight();
-                    } else if (localState instanceof ColorAndView) {
-                        ColorAndView colorAndView = (ColorAndView) localState;
-                        colorAndView.view.unhighlight();
+                    } else if (localState instanceof TileInfoAndView) {
+                        TileInfoAndView tileInfoAndView = (TileInfoAndView) localState;
+                        tileInfoAndView.view.unhighlight();
                     }
                     unhighlight();
                     break;

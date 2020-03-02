@@ -7,12 +7,8 @@ public class Tile {
     public final int color;
     public final Type type;
 
-    public Tile(int x, int y, int color) {
-        this(new Cell(x, y), color);
-    }
-
-    public Tile(Cell cell, int color) {
-        this(cell, color, Type.SIMPLE);
+    public Tile(int x, int y, int color, Type type) {
+        this(new Cell(x, y), color, type);
     }
 
     public Tile(Cell cell, int color, Type type) {

@@ -37,22 +37,42 @@ public class GameField {
 
     void dumpField() {
         Map<Integer, Integer> colorMap = new HashMap<>();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < ROWS_COUNT; i++) {
             for (int j = 0; j < COLUMNS_COUNT; j++) {
                 Tile tile = getTile(j, i);
                 if (tile == null) {
-                    System.out.print(0);
+                    sb.append("0  ");
                 } else {
                     Integer num = colorMap.get(tile.color);
                     if (num == null) {
                         num = colorMap.size() + 1;
                         colorMap.put(tile.color, num);
                     }
-                    System.out.print(num);
+                    String type = null;
+                    switch (tile.type) {
+                        case SIMPLE:
+                            type = "  ";
+                            break;
+                        case VERTICAL:
+                            type = "V ";
+                            break;
+                        case HORIZONTAL:
+                            type = "H ";
+                            break;
+                        case VERTICAL_HORIZONTAL:
+                            type = "VH";
+                            break;
+                        case BOMB:
+                            type = "B ";
+                            break;
+                    }
+                    sb.append(num).append(type);
                 }
-                System.out.print(" ");
+                sb.append(" ");
             }
-            System.out.println();
+            sb.append("\n");
         }
+        System.out.println(sb);
     }
 }
