@@ -24,10 +24,35 @@ public class TileGeneratorImpl implements TileGenerator {
 
     @Override
     public void initField() {
-        for (int i = 0; i < INIT_CELLS_COUNT; i++) {
-            Tile tile = generate();
-            field.setTile(tile);
-        }
+//        for (int i = 0; i < INIT_CELLS_COUNT; i++) {
+//            Tile tile = generate();
+//            field.setTile(tile);
+//        }
+
+        int yellow = colorPalette[0];
+        int red = colorPalette[1];
+        int green = colorPalette[2];
+        int white = colorPalette[3];
+
+        field.setTile(new Tile(0, 1, red, Tile.Type.HORIZONTAL));
+        field.setTile(new Tile(0, 2, yellow, Tile.Type.BOMB));
+        field.setTile(new Tile(0, 3, red, Tile.Type.VERTICAL_HORIZONTAL));
+        field.setTile(new Tile(0, 4, yellow, Tile.Type.SIMPLE));
+        field.setTile(new Tile(0, 5, green, Tile.Type.SIMPLE));
+
+        field.setTile(new Tile(1, 3, white, Tile.Type.SIMPLE));
+        field.setTile(new Tile(1, 4, yellow, Tile.Type.SIMPLE));
+        field.setTile(new Tile(1, 5, green, Tile.Type.SIMPLE));
+
+        field.setTile(new Tile(2, 2, yellow, Tile.Type.SIMPLE));
+        field.setTile(new Tile(2, 3, red, Tile.Type.SIMPLE));
+        field.setTile(new Tile(2, 4, yellow, Tile.Type.HORIZONTAL));
+        field.setTile(new Tile(2, 5, green, Tile.Type.BOMB));
+
+        field.setTile(new Tile(3, 2, green, Tile.Type.HORIZONTAL));
+        field.setTile(new Tile(3, 3, yellow, Tile.Type.SIMPLE));
+        field.setTile(new Tile(3, 4, green, Tile.Type.SIMPLE));
+        field.setTile(new Tile(3, 5, red, Tile.Type.SIMPLE));
     }
 
     @Override

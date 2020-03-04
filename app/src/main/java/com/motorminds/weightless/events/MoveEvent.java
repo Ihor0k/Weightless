@@ -9,14 +9,14 @@ public class MoveEvent extends AbstractCellEvent {
     private final Cell from;
     private final Cell to;
 
-    MoveEvent(GameContract.View view, Cell from, Cell to) {
-        super(view);
+    MoveEvent(GameContract.View view, Cell from, Cell to, EventAction action) {
+        super(view, action);
         this.from = from;
         this.to = to;
     }
 
     @Override
-    public Animator getAnimator() {
+    public Animator getEventAnimator() {
         return view.moveTile(from, to);
     }
 

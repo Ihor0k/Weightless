@@ -19,16 +19,16 @@ public class GameEventFactory {
         this.scoreView = scoreView;
     }
 
-    public GameEvent move(Cell from, Cell to) {
-        return new MoveEvent(view, from, to);
+    public GameEvent move(Cell from, Cell to, EventAction action) {
+        return new MoveEvent(view, from, to, action);
     }
 
-    public GameEvent create(Tile tile) {
-        return new CreateEvent(view, tile);
+    public GameEvent create(Tile tile, EventAction action) {
+        return new CreateEvent(view, tile, action);
     }
 
-    public GameEvent remove(Cell cell) {
-        return new RemoveEvent(view, cell);
+    public GameEvent remove(Cell cell, EventAction action) {
+        return new RemoveEvent(view, cell, action);
     }
 
     public GameEvent score(int score) {
@@ -48,7 +48,8 @@ public class GameEventFactory {
             this.eventChain = eventChain;
         }
 
-        public void add(GameEvent event) {
+        public void add(EventProducer producer) {
+            GameEvent event = producer.get();
             if (event != null) {
                 events.add(event);
             }

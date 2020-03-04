@@ -8,13 +8,13 @@ import com.motorminds.weightless.GameContract;
 public class RemoveEvent extends AbstractCellEvent {
     private final Cell cell;
 
-    RemoveEvent(GameContract.View view, Cell cell) {
-        super(view);
+    RemoveEvent(GameContract.View view, Cell cell, EventAction action) {
+        super(view, action);
         this.cell = cell;
     }
 
     @Override
-    public Animator getAnimator() {
+    public Animator getEventAnimator() {
         return view.removeTile(cell);
     }
 

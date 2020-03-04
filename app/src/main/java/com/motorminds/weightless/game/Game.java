@@ -98,8 +98,7 @@ public class Game {
     }
 
     public GameEvent createTile(Tile tile) {
-        field.setTile(tile);
-        return eventFactory.create(tile);
+        return eventFactory.create(tile, () -> field.setTile(tile));
     }
 
     private GameEvent pushTiles(Tile... tiles) {
@@ -299,8 +298,7 @@ public class Game {
     }
 
     private GameEvent removeTile(Cell cell) {
-        field.removeTile(cell.x, cell.y);
-        return eventFactory.remove(cell);
+        return eventFactory.remove(cell, () -> field.removeTile(cell.x, cell.y));
     }
 
     private GameEvent moveTile(int fromX, int fromY, int toX, int toY) {
@@ -308,10 +306,11 @@ public class Game {
             return null;
         }
         Tile oldTile = field.getTile(fromX, fromY);
-        field.removeTile(fromX, fromY);
         Tile newTile = new Tile(toX, toY, oldTile.color, oldTile.type);
-        field.setTile(newTile);
-        return eventFactory.move(oldTile.cell, newTile.cell);
+        return eventFactory.move(oldTile.cell, newTile.cell, () -> {
+            field.removeTile(fromX, fromY);
+            field.setTile(newTile);
+        });
     }
 
     private int lowerAvailableRow(int x) {
